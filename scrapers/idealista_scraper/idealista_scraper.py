@@ -94,7 +94,7 @@ class IdealistaScraper(BaseScraper):
                 if not ok:
                     self.logger.error(f"Error en la petición de la vivienda #{ix}. Reintentando con Playwright...")
                     cookies = extract_cookies_from_session(session)
-                    ok, session, resp_property_content = self.open_browser_with_session(s, cookies, property_parsed.url)
+                    ok, session, resp_property_content = self.open_browser_with_session(session, cookies, property_parsed.url)
                     # return False
 
                 # TODO: pasar a parse_helpers
@@ -135,7 +135,7 @@ class IdealistaScraper(BaseScraper):
                 if not ok or page % 50 == 0:
                     # Abrir navegador Playwirght en caso de error al pasar a siguiente página o cada 50 páginas
                     cookies = extract_cookies_from_session(session)
-                    ok, session, resp_next_page_content = self.open_browser_with_session(s, cookies, req_next_page_url)
+                    ok, session, resp_next_page_content = self.open_browser_with_session(session, cookies, req_next_page_url)
                 self.logger.info("Pasando a la página {} ({})...".format(page + 1, req_next_page_url))
                 continue
             else:
