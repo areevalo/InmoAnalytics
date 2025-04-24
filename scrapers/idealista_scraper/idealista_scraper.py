@@ -14,8 +14,7 @@ from scrapers.base_scraper import BaseScraper, extract_cookies_from_session
 # Definir la URL de búsqueda en Fotocasa
 base_url = "https://www.idealista.com"
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36"
-# USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:138.0) Gecko/20100101 Firefox/137.0"
-s = requests.Session()
+
 req_headers = {
     "User-Agent": USER_AGENT,
     "Host": "www.idealista.com",
@@ -45,41 +44,35 @@ class IdealistaScraper(BaseScraper):
     def __init__(self):
         super().__init__(base_url)
         self.req_headers = req_headers
-        self.proxy = {
-            'server': 'https://83.218.186.22:5678'
+        self.proxies = {
+            'http': 'http://102.38.7.110:1972',
+            'https': 'http://102.38.7.110:1972'
         }
+        self.proxies = {}
 
     def scrape(self):
-        self.logger.info("Starting scraping for Idealista")
-        # session = requests.session()
-        ok, session, resp_init_html_content = self.open_browser_with_session(url="https://www.idealista.com/venta-viviendas/madrid-provincia/")
-        # resp_init = s.get(
-        #     url=self.base_url,
-        #     headers=self.req_headers
-        # )
-        # if not resp_init.status_code == 200:
-        #     cookies = extract_cookies_from_session(s)
-        #     self.open_browser_with_session(cookies)
+        self.logger.info("Empezando scraping en Idealista...")
+        session = requests.Session()
+        # ok, session, resp_init_html_content = self.open_browser_with_session(url="https://www.idealista.com/venta-viviendas/madrid-provincia/")
         # TODO: poner la URL por pantalla
-        busqueda_idealista_url = input("Introduzca la URL de la búsqueda de idealista que quiere procesar:")
-        if busqueda_idealista_url == "":
-            busqueda_idealista_url = "https://www.idealista.com/venta-viviendas/madrid-provincia/con-sin-inquilinos/?ordenado-por=fecha-publicacion-desc"
+        req_init_url = input("Introduzca la URL de la búsqueda de idealista que quiere procesar:")
+        if req_init_url == "":
+            req_init_url = "https://www.idealista.com/venta-viviendas/madrid-provincia/con-sin-inquilinos/?ordenado-por=fecha-publicacion-desc"
 
         self.logger.info("Proceso iniciado a {}".format(datetime.datetime.now()))
-
-        # Hacer la solicitud HTTP y obtener el HTML
-        resp_busqueda_idealista = session.get(
-            url=busqueda_idealista_url,
-            headers=self.req_headers
-            # proxies=self.proxy
+        # Hacer la solicitud HTTP y obtener el HTML inicial
+        resp_init = session.get(
+            url=req_init_url,
+            headers=self.req_headers,
+            proxies=self.proxies
         )
-        html_content = resp_busqueda_idealista.content
-        if not resp_busqueda_idealista.status_code == 200:
+        html_content = resp_init.content
+        if not resp_init.status_code == 200:
             cookies = extract_cookies_from_session(session)
-            ok, session, html_content = self.open_browser_with_session(cookies=cookies, url=busqueda_idealista_url)
+            ok, session, html_content = self.open_browser_with_session(cookies=cookies, url=req_init_url)
         resp_next_page_content = None
-        scraped_properties = []  # type: List[PropertyFeatures]
 
+        scraped_properties = []  # type: List[PropertyFeatures]
         for page in range(1, 100):
             page_scraped_properties = []
             if resp_next_page_content:
@@ -88,22 +81,24 @@ class IdealistaScraper(BaseScraper):
 
             for ix, property_parsed in enumerate(properties_parsed):
                 time.sleep(3 + 2 * random.random())
-                resp_casa = session.get(
-                    url=property_parsed.url,
-                    headers=self.req_headers,
-                    # proxies=self.proxy
-                )
-                resp_casa_content = resp_casa.content
-                ok = self.basic_validate_request(resp_casa)
-                if not ok:
-                    cookies = extract_cookies_from_session(session)
-                    ok, session, resp_casa_content = self.open_browser_with_session(s, cookies, property_parsed.url)
-                    self.logger.error(f"Error en la petición de la vivienda #{ix}. Abortando proceso...")
-                    # return False
                 self.logger.info("Obteniendo datos de la vivienda {} de la página {}...".format(ix + 1, page))
 
+                # Hacer una solicitud HTTP por cada una de las propiedades a procesar
+                resp_property = session.get(
+                    url=property_parsed.url,
+                    headers=self.req_headers,
+                    proxies=self.proxies
+                )
+                resp_property_content = resp_property.content
+                ok = self.basic_validate_request(resp_property)
+                if not ok:
+                    self.logger.error(f"Error en la petición de la vivienda #{ix}. Reintentando con Playwright...")
+                    cookies = extract_cookies_from_session(session)
+                    ok, session, resp_property_content = self.open_browser_with_session(s, cookies, property_parsed.url)
+                    # return False
+
                 # TODO: pasar a parse_helpers
-                propery_data_parsed = parse_helpers.get_property_data(resp_casa_content, property_parsed)
+                propery_data_parsed = parse_helpers.get_property_data(resp_property_content, property_parsed)
                 property_data_to_generate_checksum = {
                     "neighborhood": property_parsed.neighborhood,
                     "municipality": property_parsed.municipality,
@@ -119,25 +114,26 @@ class IdealistaScraper(BaseScraper):
                 page_scraped_properties.append(propery_data_parsed)
             # end for properties_parsed
             add_to_batch(page_scraped_properties, self.logger)
+            # Listado con total de propiedades scrapeadas
             scraped_properties.extend(page_scraped_properties)
 
             if "Siguiente" in str(html_content):
-
                 num_init_page = None
                 # TODO: REVISAR QUE VALOR COOKIE O HEADER O ALMACENAMIENTO LOCAL CAMBIA EN EL CAMBIO DE PAGINA / revisar por qué la segunda página nunca me pide captcha
                 time.sleep(3 + 5 * random.random())
                 if not resp_next_page_content:
-                    num_init_page = input("Desea seguir el flujo normal de descarga? En caso contrario introduzca el "
+                    num_init_page = input("¿Desea seguir el flujo normal de descarga? En caso contrario introduzca el "
                                           "número de página desde el que desea scrapear")
-                next_page_url = parse_helpers.obtener_siguiente_pag(html_content, num_init_page)
+                next_page_url = parse_helpers.get_next_page_path(html_content, num_init_page)
                 req_next_page_url = urljoin(self.base_url, next_page_url)
-                resp_next_page = s.get(
+                resp_next_page = session.get(
                     url=req_next_page_url,
                     headers=self.req_headers
                 )
                 resp_next_page_content = resp_next_page.content
                 ok = self.basic_validate_request(resp_next_page)
-                if not ok or ix % 50 == 0:
+                if not ok or page % 50 == 0:
+                    # Abrir navegador Playwirght en caso de error al pasar a siguiente página o cada 50 páginas
                     cookies = extract_cookies_from_session(session)
                     ok, session, resp_next_page_content = self.open_browser_with_session(s, cookies, req_next_page_url)
                 self.logger.info("Pasando a la página {} ({})...".format(page + 1, req_next_page_url))
@@ -157,6 +153,6 @@ class IdealistaScraper(BaseScraper):
         df = pandas.DataFrame(data, columns=list([0].keys()))
 
         # Escribir el DataFrame en un archivo Excel
-        writer = pandas.ExcelWriter('idealista_viviendas_pinto2.xlsx', engine='xlsxwriter')
+        writer = pandas.ExcelWriter('idealista_viviendas.xlsx', engine='xlsxwriter')
         df.to_excel(writer, index=False)
         writer._save()

@@ -248,9 +248,9 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property):
         return property_features
 
 
-def obtener_siguiente_pag(resp_busqueda_content: bytes, num_init_page: int):
+def get_next_page_path(resp_property_content: bytes, num_init_page: int):
     # Analizar el HTML con BeautifulSoup
-    soup = BeautifulSoup(resp_busqueda_content, "html.parser")
+    soup = BeautifulSoup(resp_property_content, "html.parser")
     try:
         pagination_element = soup.find("div", class_="pagination")
         next_page_button = pagination_element.find("a", class_="icon-arrow-right-after")

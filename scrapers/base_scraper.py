@@ -34,11 +34,7 @@ class BaseScraper:
         """
         Genera un checksum único basado en los datos relevantes de una propiedad.
 
-        Args:
-            property_data (dict): Diccionario con los datos clave de la propiedad.
-
-        Returns:
-            str: Checksum generado usando SHA-256.
+        :returns: checksum generado usando SHA-256.
         """
         # Concatena los valores relevantes en una cadena
         property_data_to_hash = ''.join(str(value) for value in property_data.values())
@@ -145,5 +141,5 @@ class BaseScraper:
         db_connection.commit()
 
     def normalize_data(self, data):
-        # Implementa lógica común para normalizar datos (ejemplo: convertir precios a números)
+        # TODO: Implementar lógica común para normalizar datos (ejemplo: convertir precios a números)
         pass
