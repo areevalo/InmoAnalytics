@@ -11,7 +11,7 @@ from database.db_funcs import add_to_batch
 from . import parse_helpers
 from scrapers.base_scraper import BaseScraper, extract_cookies_from_session
 
-# Definir la URL de búsqueda en Fotocasa
+# Definir la URL de búsqueda en Idealista
 base_url = "https://www.idealista.com"
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36"
 
@@ -41,6 +41,8 @@ req_headers_2 = {
 
 
 class IdealistaScraper(BaseScraper):
+    DEFAULT_SEARCH_URL = "https://www.idealista.com/venta-viviendas/madrid-provincia/con-sin-inquilinos/?ordenado-por=fecha-publicacion-desc"
+
     def __init__(self):
         super().__init__(base_url)
         self.req_headers = req_headers
@@ -55,10 +57,11 @@ class IdealistaScraper(BaseScraper):
         session = requests.Session()
         # ok, session, resp_init_html_content = self.open_browser_with_session(url="https://www.idealista.com/venta-viviendas/madrid-provincia/")
         # TODO: poner la URL por pantalla
-        req_init_url = input("Introduzca la URL de la búsqueda de idealista que quiere procesar:")
-        if req_init_url == "":
-            req_init_url = "https://www.idealista.com/venta-viviendas/madrid-provincia/con-sin-inquilinos/?ordenado-por=fecha-publicacion-desc"
+        # req_init_url = input("Introduzca la URL de la búsqueda de idealista que quiere procesar:")
+        # if req_init_url == "":
+        #     req_init_url = "https://www.idealista.com/venta-viviendas/madrid-provincia/con-sin-inquilinos/?ordenado-por=fecha-publicacion-desc"
 
+        req_init_url = self.DEFAULT_SEARCH_URL
         self.logger.info("Proceso iniciado a {}".format(datetime.datetime.now()))
         # Hacer la solicitud HTTP y obtener el HTML inicial
         resp_init = session.get(
@@ -119,7 +122,6 @@ class IdealistaScraper(BaseScraper):
 
             if "Siguiente" in str(html_content):
                 num_init_page = None
-                # TODO: REVISAR QUE VALOR COOKIE O HEADER O ALMACENAMIENTO LOCAL CAMBIA EN EL CAMBIO DE PAGINA / revisar por qué la segunda página nunca me pide captcha
                 time.sleep(3 + 5 * random.random())
                 if not resp_next_page_content:
                     num_init_page = input("¿Desea seguir el flujo normal de descarga? En caso contrario introduzca el "
@@ -132,8 +134,9 @@ class IdealistaScraper(BaseScraper):
                 )
                 resp_next_page_content = resp_next_page.content
                 ok = self.basic_validate_request(resp_next_page)
-                if not ok or page % 50 == 0:
-                    # Abrir navegador Playwirght en caso de error al pasar a siguiente página o cada 50 páginas
+                if not ok or page % 49 == 0:
+                    # Abrir navegador Playwright en caso de error al pasar a siguiente página o cada 50 páginas
+                    self.logger.error(f"Error en la petición de la página #{page}. Reintentando con Playwright...")
                     cookies = extract_cookies_from_session(session)
                     ok, session, resp_next_page_content = self.open_browser_with_session(session, cookies, req_next_page_url)
                 self.logger.info("Pasando a la página {} ({})...".format(page + 1, req_next_page_url))

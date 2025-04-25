@@ -1,7 +1,6 @@
 import hashlib
-
-import json
 import time
+from random import random
 
 import requests
 from bs4 import BeautifulSoup
@@ -55,7 +54,8 @@ class BaseScraper:
                 return True
         return False
 
-    def open_browser_with_session(self, session: Session = None, cookies: dict = None, url = None):
+    def open_browser_with_session(self, session: Session = None, cookies: list = None, url = None):
+        captcha_timeout = 600 * 1000 # 10 minutos
         if not session:
             session = requests.Session()
         try:
@@ -83,12 +83,78 @@ class BaseScraper:
 
                 # Abrir una nueva página con las cookies cargadas
                 page = context.new_page()
-                page.goto(self.base_url) if not url else page.goto(url)  # Cambia por la URL del sitio donde ocurre el CAPTCHA
+                target_url = url if url else self.base_url
+                page.goto(target_url, wait_until="domcontentloaded", timeout=60000)
+
+                self.logger.info("Página cargada. Buscando CAPTCHA...")
+                time.sleep(2)
+
+                captcha_locator = page.locator(
+                    'iframe[title*="captcha"], iframe[src*="captcha"], '
+                    '[id*="captcha-container"], [class*="captcha"], '
+                    '#turnstile-widget, :text("Verifica que eres humano"), '
+                    ':text("Please verify you are human")'
+                    'captcha-delivery'
+                )
+
+                try:
+                    captcha_locator.first.wait_for(state='visible', timeout=5000)
+                    is_captcha_visible = True
+                    self.logger.warning("Captcha detectado. Pendiente de resolución por el usuario..")
+                except Exception:
+                    is_captcha_visible = False
+                    self.logger.info("No se detectó CAPTCHA visible inicialmente.")
+
+                if is_captcha_visible:
+                    self.logger.warning("---------------------------------------------------------")
+                    self.logger.warning(f"POR FAVOR, RESUELVE EL CAPTCHA EN LA VENTANA DEL NAVEGADOR PLAYWRIGHT.")
+                    self.logger.warning("---------------------------------------------------------")
+                    try:
+                        self.logger.info("Esperando a que el CAPTCHA se resuelva...")
+                        captcha_locator.first.wait_for(state='hidden', timeout=captcha_timeout)
+                        self.logger.info("El elemento CAPTCHA ha sido resuelto. Continuando con el scraping...")
+                        time.sleep(2)
+
+                    except TimeoutError:
+                        self.logger.error("TIMEOUT: El CAPTCHA no se resolvió en el tiempo esperado.")
+                        return False, session, ''
+                    except Exception as wait_exc:
+                         self.logger.error(f"Error inesperado esperando desaparición del CAPTCHA: {wait_exc}")
+                         return False, session, ''
+
+                # Función para hacer scroll y esperar nuevo contenido
+                def scroll_and_wait():
+                    previous_height = page.evaluate('document.body.scrollHeight')
+                    # Hacer scroll gradual en incrementos de 300px
+                    for scroll_pos in range(0, previous_height, 300):
+                        page.evaluate(f'window.scrollTo(0, {scroll_pos})')
+                        time.sleep(0.25 + 0.5 * random())  # Pequeña pausa entre scrolls
+                    # Scroll final al fondo
+                    page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
+                    time.sleep(2)  # Esperar a que se cargue el nuevo contenido
+                    new_height = page.evaluate('document.body.scrollHeight')
+                    return new_height != previous_height
+
+                if page.url.startswith('https://www.fotocasa.es'):
+                    # Hacer scroll hasta que no haya más contenido nuevo
+                    has_more_content = True
+                    while has_more_content:
+                        try:
+                            has_more_content = scroll_and_wait()
+                            # Verificar si hay placeholder de carga
+                            placeholders = page.query_selector_all('.sui-PerfDynamicRendering-placeholder')
+                            if not placeholders:
+                                break
+                        except Exception as e:
+                            self.logger.warning(f"Error durante el scroll: {str(e)}")
+                            break
+
+                    # Esperar a que desaparezcan todos los placeholders (propiedades generadas dinámicamente)
+                    page.wait_for_selector('.sui-PerfDynamicRendering-placeholder', state='detached', timeout=10000)
 
                 time.sleep(10)
-                # TODO: pausar de otra manera que no sea con punto de interrupción (solo cuando pida captcha)
-                # Pausar para resolver el CAPTCHA manualmente
-                time.sleep(0.1)
+
+                self.logger.info("Obteniendo contenido final de la página y cookies...")
                 response_html = page.content()
                 cookies_dict = context.cookies()
                 for key in ['didomi_token', '__rtbh.lid', '__rtbh.uid', 'euconsent-v2']:
@@ -115,8 +181,14 @@ class BaseScraper:
                 )
             session.cookies = jar
         except Exception as exc:
-            self.logger.error(f"Couldn't open headless browser. HANDLED EXCEPTION -> {exc}")
-            return False, session, ''
+             self.logger.error(f"Couldn't open browser/handle session. HANDLED EXCEPTION -> {exc}")
+             # Intenta cerrar el navegador si aún existe en caso de excepción general
+             try:
+                 if 'browser' in locals() and browser.is_connected():
+                     browser.close()
+             except Exception:
+                 pass
+             return False, session, ''
         return True, session, response_html
 
     def fetch_html(self, url):

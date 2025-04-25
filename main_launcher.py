@@ -1,14 +1,16 @@
+import concurrent.futures
+
 from scrapers.idealista_scraper.idealista_scraper import IdealistaScraper
+from scrapers.fotocasa_scraper.fotocasa_scraper import FotocasaScraper
 
 
 class MainLauncher:
     def __init__(self):
-        self.scrapers = [IdealistaScraper()]#, FotocasaScraper()]
+        self.scrapers = [ IdealistaScraper()] # FotocasaScraper()] # IdealistaScraper(),
 
     def run_all_scrapers(self):
-        # TODO: añadir concurrencia
-        for scraper in self.scrapers:
-            scraper.scrape()
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(self.scrapers)) as executor:
+            executor.map(lambda scraper: scraper.scrape(), self.scrapers)
 
 # Ejecución del launcher
 if __name__ == "__main__":

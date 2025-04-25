@@ -1,23 +1,79 @@
 import re
+from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 
+from custom_types import Property
 
-def obtener_casas(resp_casas_content: bytes):
+
+def get_properties(html_content: bytes, base_url: str):
     # Analizar el HTML con BeautifulSoup
-    soup = BeautifulSoup(resp_casas_content, "html.parser")
+    soup = BeautifulSoup(html_content, "html.parser")
 
     # Extraer los datos de cada anuncio
-    data = []
+    properties = []
+    for listing in soup.find_all("article", class_=["re-CardPackPremium", "re-CardPackMinimal"]):
+        title = listing.find("span", class_="re-CardTitle").text.strip()
+        description = listing.find("p", class_="re-CardDescription").text.strip()
+        price = listing.find("span", class_="re-CardPrice").text.strip()
+        # location = listing.find("p", class_="re-CardPackLocation").text.strip()
+        url_path = listing.find("a", class_=["re-CardPackPremium-carousel", "re-CardPackMinimal-slider"]).get('href')
+        street_start_position = title.find(' en ')
+        # TODO: modificar y adaptar a Fotocasa
+        if street_start_position > -1:
+            # Ajustar para empezar después de 'en'
+            street_start_position += len(' en ')
 
-    for listing in soup.find_all("article", class_="item"):
-        title = listing.find("a", class_="item-link").text.strip()
-        description = listing.find("div", class_="item-description").text.strip()
-        price = listing.find("span", class_="item-price").text.strip()
-        url = listing.find("a", class_="item-link").get('href')
-        data.append({"Título": title, "Descripción": description, "Precio": price, "Url": url})
+            # Buscar todas las comas en el título
+            commas = [pos for pos, char in enumerate(title) if char == ',']
 
-    return data
+            # Inicializar campos
+            street = None
+            neighborhood = None
+            municipality = None
+
+            if commas:
+                # La última coma indica el municipio
+                municipality = title[commas[-1] + 1:].strip()
+
+                # Si hay más de una coma, analizar el contenido entre las comas
+                if len(commas) > 1:
+                    possible_number = title[commas[0] + 1:commas[1]].strip()
+                    # Verificar si el texto entre la primera y segunda coma es un número o un 's/n'
+                    if possible_number.isdigit() or 's/n' in possible_number:
+                        # Incluir el número en la calle
+                        street = title[street_start_position:commas[1]].strip()
+                        neighborhood = title[commas[1] + 1:commas[-1]].strip()
+                    else:
+                        # Si no es un número, asignar como barrio
+                        street = title[street_start_position:commas[0]].strip()
+                        neighborhood = title[commas[0] + 1:commas[-1]].strip()
+                else:
+                    # Si solo hay una coma, asumir que todo después de 'en' hasta la coma es el barrio
+                    street = None
+                    neighborhood = title[street_start_position:commas[0]].strip()
+            else:
+                # Si no hay comas, asumir que todo después de 'en' es el municipio
+                municipality = title[street_start_position:].strip()
+
+            # Capitalizar los resultados para consistencia
+            street = street[0].upper() + street[1:] if street else None
+            neighborhood = neighborhood[0].upper() + neighborhood[1:] if neighborhood else None
+            municipality = municipality[0].upper() + municipality[1:] if municipality else None
+
+        property_data = Property(
+            url=urljoin(base_url, url_path),
+            price=int(price.replace('.', '').rstrip("€")) if price != 'A consultar' else None,
+            municipality=municipality,
+            neighborhood=neighborhood,
+            street=street,
+            origin="Fotocasa",
+            checksum=""
+        )
+
+        properties.append(property_data)
+
+    return properties
 
 def obtener_datos_casa(resp_casa_content: bytes, url: str):
     # Analizar el HTML con BeautifulSoup

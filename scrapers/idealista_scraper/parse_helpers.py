@@ -62,7 +62,7 @@ def get_properties(resp_casas_content: bytes, base_url: str):
             neighborhood = neighborhood[0].upper() + neighborhood[1:] if neighborhood else None
             municipality = municipality[0].upper() + municipality[1:] if municipality else None
 
-        property = Property(
+        property_data = Property(
             url=urljoin(base_url, url_path),
             price=int(price.replace('.', '').rstrip("€")),
             municipality=municipality,
@@ -72,7 +72,7 @@ def get_properties(resp_casas_content: bytes, base_url: str):
             checksum=""
         )
 
-        properties.append(property)
+        properties.append(property_data)
 
     return properties
 
