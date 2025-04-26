@@ -248,7 +248,7 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property):
         return property_features
 
 
-def get_next_page_path(resp_property_content: bytes, num_init_page: int):
+def get_next_page_path(resp_property_content: bytes, num_init_page: int, logger=None):
     # Analizar el HTML con BeautifulSoup
     soup = BeautifulSoup(resp_property_content, "html.parser")
     try:
@@ -257,6 +257,7 @@ def get_next_page_path(resp_property_content: bytes, num_init_page: int):
         next_page_url = next_page_button.get('href')
         if num_init_page:
             next_page_url = re.sub(r'pagina-\d+', f'pagina-{num_init_page}', next_page_url)
+            logger.info(f"Se ha modicado la página a procesar a la número {num_init_page}")
     except Exception as exc:
         print("No se ha podido obtener la siguiente página a procesar -> {}".format(exc))
         return None

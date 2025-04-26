@@ -76,7 +76,7 @@ class IdealistaScraper(BaseScraper):
         resp_next_page_content = None
 
         scraped_properties = []  # type: List[PropertyFeatures]
-        for page in range(1, 100):
+        for num_page in range(1, 200):
             page_scraped_properties = []
             if resp_next_page_content:
                 html_content = resp_next_page_content
@@ -84,7 +84,7 @@ class IdealistaScraper(BaseScraper):
 
             for ix, property_parsed in enumerate(properties_parsed):
                 time.sleep(3 + 2 * random.random())
-                self.logger.info("Obteniendo datos de la vivienda {} de la página {}...".format(ix + 1, page))
+                self.logger.info("Obteniendo datos de la vivienda {} de la página {}...".format(ix + 1, num_page))
 
                 # Hacer una solicitud HTTP por cada una de las propiedades a procesar
                 resp_property = session.get(
@@ -121,25 +121,27 @@ class IdealistaScraper(BaseScraper):
             scraped_properties.extend(page_scraped_properties)
 
             if "Siguiente" in str(html_content):
-                num_init_page = None
+                num_next_page = None
                 time.sleep(3 + 5 * random.random())
                 if not resp_next_page_content:
-                    num_init_page = input("¿Desea seguir el flujo normal de descarga? En caso contrario introduzca el "
+                    num_next_page = input("¿Desea seguir el flujo normal de descarga? En caso contrario introduzca el "
                                           "número de página desde el que desea scrapear")
-                next_page_url = parse_helpers.get_next_page_path(html_content, num_init_page)
+                next_page_url = parse_helpers.get_next_page_path(html_content, num_next_page, self.logger)
                 req_next_page_url = urljoin(self.base_url, next_page_url)
                 resp_next_page = session.get(
                     url=req_next_page_url,
                     headers=self.req_headers
                 )
+                num_next_page = num_next_page = num_page + 1 if not num_next_page else int(num_next_page)
+
                 resp_next_page_content = resp_next_page.content
                 ok = self.basic_validate_request(resp_next_page)
-                if not ok or page % 49 == 0:
+                if not ok or num_next_page % 50 == 0:
                     # Abrir navegador Playwright en caso de error al pasar a siguiente página o cada 50 páginas
-                    self.logger.error(f"Error en la petición de la página #{page}. Reintentando con Playwright...")
+                    self.logger.error(f"Error en la petición de la página #{num_next_page}. Reintentando con Playwright...")
                     cookies = extract_cookies_from_session(session)
                     ok, session, resp_next_page_content = self.open_browser_with_session(session, cookies, req_next_page_url)
-                self.logger.info("Pasando a la página {} ({})...".format(page + 1, req_next_page_url))
+                self.logger.info("Pasando a la página {} ({})...".format(num_page + 1, req_next_page_url))
                 continue
             else:
                 self.logger.info("No hay más páginas para procesar")
