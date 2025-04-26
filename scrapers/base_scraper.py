@@ -54,7 +54,7 @@ class BaseScraper:
                 return True
         return False
 
-    def open_browser_with_session(self, session: Session = None, cookies: list = None, url = None):
+    def open_browser_with_session(self, session: Session = None, cookies: list = None, url = None, mandatory_pause: int = None):
         captcha_timeout = 600 * 1000 # 10 minutos
         if not session:
             session = requests.Session()
@@ -104,7 +104,10 @@ class BaseScraper:
                 except Exception:
                     is_captcha_visible = False
                     self.logger.info("No se detectó CAPTCHA visible inicialmente.")
-
+                if mandatory_pause:
+                    self.logger.info(f"Pausando el script por {mandatory_pause} segundos "
+                                     f"para interactuar con la web y evitar bloqueo...")
+                    time.sleep(mandatory_pause)
                 if is_captcha_visible:
                     self.logger.warning("---------------------------------------------------------")
                     self.logger.warning(f"POR FAVOR, RESUELVE EL CAPTCHA EN LA VENTANA DEL NAVEGADOR PLAYWRIGHT.")
@@ -124,6 +127,7 @@ class BaseScraper:
 
                 # Función para hacer scroll y esperar nuevo contenido
                 def scroll_and_wait():
+                    self.logger.info("Haciendo scroll para cargar todo el contenido dinámico...")
                     previous_height = page.evaluate('document.body.scrollHeight')
                     # Hacer scroll gradual en incrementos de 300px
                     for scroll_pos in range(0, previous_height, 300):
@@ -140,6 +144,7 @@ class BaseScraper:
                     has_more_content = True
                     while has_more_content:
                         try:
+                            time.sleep(2)
                             has_more_content = scroll_and_wait()
                             # Verificar si hay placeholder de carga
                             placeholders = page.query_selector_all('.sui-PerfDynamicRendering-placeholder')
@@ -150,7 +155,7 @@ class BaseScraper:
                             break
 
                     # Esperar a que desaparezcan todos los placeholders (propiedades generadas dinámicamente)
-                    page.wait_for_selector('.sui-PerfDynamicRendering-placeholder', state='detached', timeout=10000)
+                    page.wait_for_selector('.sui-PerfDynamicRendering-placeholder', state='detached', timeout=20000)
 
                 time.sleep(10)
 

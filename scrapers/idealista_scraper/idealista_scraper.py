@@ -140,7 +140,7 @@ class IdealistaScraper(BaseScraper):
                     # Abrir navegador Playwright en caso de error al pasar a siguiente página o cada 50 páginas
                     self.logger.error(f"Error en la petición de la página #{num_next_page}. Reintentando con Playwright...")
                     cookies = extract_cookies_from_session(session)
-                    ok, session, resp_next_page_content = self.open_browser_with_session(session, cookies, req_next_page_url)
+                    ok, session, resp_next_page_content = self.open_browser_with_session(session, cookies, req_next_page_url, 900)
                 self.logger.info("Pasando a la página {} ({})...".format(num_page + 1, req_next_page_url))
                 continue
             else:
