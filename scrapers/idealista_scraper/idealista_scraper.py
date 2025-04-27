@@ -76,7 +76,9 @@ class IdealistaScraper(BaseScraper):
         resp_next_page_content = None
 
         scraped_properties = []  # type: List[PropertyFeatures]
+        num_next_page = None
         for num_page in range(1, 200):
+            num_page = num_next_page if num_next_page else num_page
             page_scraped_properties = []
             if resp_next_page_content:
                 html_content = resp_next_page_content
@@ -132,7 +134,7 @@ class IdealistaScraper(BaseScraper):
                     url=req_next_page_url,
                     headers=self.req_headers
                 )
-                num_next_page = num_next_page = num_page + 1 if not num_next_page else int(num_next_page)
+                num_next_page = num_page + 1 if not num_next_page else int(num_next_page)
 
                 resp_next_page_content = resp_next_page.content
                 ok = self.basic_validate_request(resp_next_page)
@@ -141,7 +143,7 @@ class IdealistaScraper(BaseScraper):
                     self.logger.error(f"Error en la petición de la página #{num_next_page}. Reintentando con Playwright...")
                     cookies = extract_cookies_from_session(session)
                     ok, session, resp_next_page_content = self.open_browser_with_session(session, cookies, req_next_page_url, 900)
-                self.logger.info("Pasando a la página {} ({})...".format(num_page + 1, req_next_page_url))
+                self.logger.info("Procesando la página {} ({})...".format(num_next_page, req_next_page_url))
                 continue
             else:
                 self.logger.info("No hay más páginas para procesar")
