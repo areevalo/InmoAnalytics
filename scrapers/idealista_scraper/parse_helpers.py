@@ -236,7 +236,7 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property):
                     print('underfloor_heating')
                     continue
 
-                print(f"Ningun valor a procesar -> {fila_text_str}")
+                # print(f"Ningun valor a procesar -> {fila_text_str}")
 
         return property_features
 
