@@ -54,112 +54,115 @@ class IdealistaScraper(BaseScraper):
 
     def scrape(self):
         self.logger.info("Empezando scraping en Idealista...")
-        session = requests.Session()
-        # ok, session, resp_init_html_content = self.open_browser_with_session(url="https://www.idealista.com/venta-viviendas/madrid-provincia/")
-        # TODO: poner la URL por pantalla
-        # req_init_url = input("Introduzca la URL de la búsqueda de idealista que quiere procesar:")
-        # if req_init_url == "":
-        #     req_init_url = "https://www.idealista.com/venta-viviendas/madrid-provincia/con-sin-inquilinos/?ordenado-por=fecha-publicacion-desc"
+        try:
+            session = requests.Session()
+            # ok, session, resp_init_html_content = self.open_browser_with_session(url="https://www.idealista.com/venta-viviendas/madrid-provincia/")
+            # TODO: poner la URL por pantalla
+            # req_init_url = input("Introduzca la URL de la búsqueda de idealista que quiere procesar:")
+            # if req_init_url == "":
+            #     req_init_url = "https://www.idealista.com/venta-viviendas/madrid-provincia/con-sin-inquilinos/?ordenado-por=fecha-publicacion-desc"
 
-        req_init_url = self.DEFAULT_SEARCH_URL
-        self.logger.info("Proceso iniciado a {}".format(datetime.datetime.now()))
-        # Hacer la solicitud HTTP y obtener el HTML inicial
-        resp_init = session.get(
-            url=req_init_url,
-            headers=self.req_headers,
-            proxies=self.proxies
-        )
-        html_content = resp_init.content
-        if not resp_init.status_code == 200:
-            cookies = extract_cookies_from_session(session)
-            ok, session, html_content = self.open_browser_with_session(cookies=cookies, url=req_init_url)
-        resp_next_page_content = None
+            req_init_url = self.DEFAULT_SEARCH_URL
+            self.logger.info("Proceso iniciado a {}".format(datetime.datetime.now()))
+            # Hacer la solicitud HTTP y obtener el HTML inicial
+            resp_init = session.get(
+                url=req_init_url,
+                headers=self.req_headers,
+                proxies=self.proxies
+            )
+            html_content = resp_init.content
+            if not resp_init.status_code == 200:
+                cookies = extract_cookies_from_session(session)
+                ok, session, html_content = self.open_browser_with_session(cookies=cookies, url=req_init_url)
+            resp_next_page_content = None
 
-        scraped_properties = []  # type: List[PropertyFeatures]
-        num_next_page = None
-        for num_page in range(1, 200):
-            num_page = num_next_page if num_next_page else num_page
-            page_scraped_properties = []
-            if resp_next_page_content:
-                html_content = resp_next_page_content
-            properties_parsed = parse_helpers.get_properties(html_content, base_url)
+            scraped_properties = []  # type: List[PropertyFeatures]
+            num_next_page = None
+            for num_page in range(1, 200):
+                num_page = num_next_page if num_next_page else num_page
+                page_scraped_properties = []
+                if resp_next_page_content:
+                    html_content = resp_next_page_content
+                properties_parsed = parse_helpers.get_properties(html_content, base_url)
 
-            for ix, property_parsed in enumerate(properties_parsed):
-                time.sleep(3 + 2 * random.random())
-                self.logger.info("Obteniendo datos de la vivienda {} de la página {}...".format(ix + 1, num_page))
+                for ix, property_parsed in enumerate(properties_parsed):
+                    time.sleep(3 + 2 * random.random())
+                    self.logger.info("Obteniendo datos de la vivienda {} de la página {}...".format(ix + 1, num_page))
 
-                # Hacer una solicitud HTTP por cada una de las propiedades a procesar
-                resp_property = session.get(
-                    url=property_parsed.url,
-                    headers=self.req_headers,
-                    proxies=self.proxies
-                )
-                resp_property_content = resp_property.content
-                ok = self.basic_validate_request(resp_property)
-                if not ok:
-                    self.logger.error(f"Error en la petición de la vivienda #{ix}. Reintentando con Playwright...")
-                    cookies = extract_cookies_from_session(session)
-                    ok, session, resp_property_content = self.open_browser_with_session(session, cookies, property_parsed.url)
-                    # return False
+                    # Hacer una solicitud HTTP por cada una de las propiedades a procesar
+                    resp_property = session.get(
+                        url=property_parsed.url,
+                        headers=self.req_headers,
+                        proxies=self.proxies
+                    )
+                    resp_property_content = resp_property.content
+                    ok = self.basic_validate_request(resp_property)
+                    if not ok:
+                        self.logger.error(f"Error en la petición de la vivienda #{ix}. Reintentando con Playwright...")
+                        cookies = extract_cookies_from_session(session)
+                        ok, session, resp_property_content = self.open_browser_with_session(session, cookies, property_parsed.url)
+                        # return False
 
-                # TODO: pasar a parse_helpers
-                propery_data_parsed = parse_helpers.get_property_data(resp_property_content, property_parsed)
-                property_data_to_generate_checksum = {
-                    "neighborhood": property_parsed.neighborhood,
-                    "municipality": property_parsed.municipality,
-                    "floor_level": propery_data_parsed.floor_level,
-                    "rooms": propery_data_parsed.rooms,
-                    "baths": propery_data_parsed.baths,
-                    "area": propery_data_parsed.area,
-                }
+                    # TODO: pasar a parse_helpers
+                    propery_data_parsed = parse_helpers.get_property_data(resp_property_content, property_parsed)
+                    property_data_to_generate_checksum = {
+                        "neighborhood": property_parsed.neighborhood,
+                        "municipality": property_parsed.municipality,
+                        "floor_level": propery_data_parsed.floor_level,
+                        "rooms": propery_data_parsed.rooms,
+                        "baths": propery_data_parsed.baths,
+                        "area": propery_data_parsed.area,
+                    }
 
-                checksum = self.generate_property_checksum(property_data_to_generate_checksum)
-                property_parsed.checksum = checksum
-                propery_data_parsed.property = property_parsed
-                page_scraped_properties.append(propery_data_parsed)
-            # end for properties_parsed
-            add_to_batch(page_scraped_properties, self.logger)
-            # Listado con total de propiedades scrapeadas
-            scraped_properties.extend(page_scraped_properties)
+                    checksum = self.generate_property_checksum(property_data_to_generate_checksum)
+                    property_parsed.checksum = checksum
+                    propery_data_parsed.property = property_parsed
+                    page_scraped_properties.append(propery_data_parsed)
+                # end for properties_parsed
+                add_to_batch(page_scraped_properties, self.logger)
+                # Listado con total de propiedades scrapeadas
+                scraped_properties.extend(page_scraped_properties)
 
-            if "Siguiente" in str(html_content):
-                num_next_page = None
-                time.sleep(3 + 5 * random.random())
-                if not resp_next_page_content:
-                    num_next_page = input("¿Desea seguir el flujo normal de descarga? En caso contrario introduzca el "
-                                          "número de página desde el que desea scrapear")
-                next_page_url = parse_helpers.get_next_page_path(html_content, num_next_page, self.logger)
-                req_next_page_url = urljoin(self.base_url, next_page_url)
-                resp_next_page = session.get(
-                    url=req_next_page_url,
-                    headers=self.req_headers
-                )
-                num_next_page = num_page + 1 if not num_next_page else int(num_next_page)
+                if "Siguiente" in str(html_content):
+                    num_next_page = None
+                    time.sleep(3 + 5 * random.random())
+                    if not resp_next_page_content:
+                        num_next_page = input("¿Desea seguir el flujo normal de descarga? En caso contrario introduzca el "
+                                              "número de página desde el que desea scrapear")
+                    next_page_url = parse_helpers.get_next_page_path(html_content, num_next_page, self.logger)
+                    req_next_page_url = urljoin(self.base_url, next_page_url)
+                    resp_next_page = session.get(
+                        url=req_next_page_url,
+                        headers=self.req_headers
+                    )
+                    num_next_page = num_page + 1 if not num_next_page else int(num_next_page)
 
-                resp_next_page_content = resp_next_page.content
-                ok = self.basic_validate_request(resp_next_page)
-                if not ok or num_next_page % 50 == 0:
-                    # Abrir navegador Playwright en caso de error al pasar a siguiente página o cada 50 páginas
-                    self.logger.error(f"Error en la petición de la página #{num_next_page}. Reintentando con Playwright...")
-                    cookies = extract_cookies_from_session(session)
-                    ok, session, resp_next_page_content = self.open_browser_with_session(session, cookies, req_next_page_url, 900)
-                self.logger.info("Procesando la página {} ({})...".format(num_next_page, req_next_page_url))
-                continue
-            else:
-                self.logger.info("No hay más páginas para procesar")
-                break
+                    resp_next_page_content = resp_next_page.content
+                    ok = self.basic_validate_request(resp_next_page)
+                    if not ok or num_next_page % 50 == 0:
+                        # Abrir navegador Playwright en caso de error al pasar a siguiente página o cada 50 páginas
+                        self.logger.error(f"Error en la petición de la página #{num_next_page}. Reintentando con Playwright...")
+                        cookies = extract_cookies_from_session(session)
+                        ok, session, resp_next_page_content = self.open_browser_with_session(session, cookies, req_next_page_url, 900)
+                    self.logger.info("Procesando la página {} ({})...".format(num_next_page, req_next_page_url))
+                    continue
+                else:
+                    self.logger.info("No hay más páginas para procesar")
+                    break
 
-        self.logger.info("Proceso finalizado a {}".format(datetime.datetime.now()))
+            self.logger.info("Proceso finalizado a {}".format(datetime.datetime.now()))
 
-        # Crear el DataFrame de Pandas y exportarlo a un archivo Excel
-        self.logger.info("Creando Excel con los datos de viviendas procesadas")
-        # Convertir los diccionarios en filas de datos
-        data = [list(p.values()) for p in scraped_properties]
+            # Crear el DataFrame de Pandas y exportarlo a un archivo Excel
+            self.logger.info("Creando Excel con los datos de viviendas procesadas")
+            # Convertir los diccionarios en filas de datos
+            data = [list(p.values()) for p in scraped_properties]
 
-        # Crear un DataFrame a partir de las filas de datos
-        df = pandas.DataFrame(data, columns=list([0].keys()))
+            # Crear un DataFrame a partir de las filas de datos
+            df = pandas.DataFrame(data, columns=list([0].keys()))
 
-        # Escribir el DataFrame en un archivo Excel
-        writer = pandas.ExcelWriter('idealista_viviendas.xlsx', engine='xlsxwriter')
-        df.to_excel(writer, index=False)
-        writer._save()
+            # Escribir el DataFrame en un archivo Excel
+            writer = pandas.ExcelWriter('idealista_viviendas.xlsx', engine='xlsxwriter')
+            df.to_excel(writer, index=False)
+            writer._save()
+        except Exception as e:
+            self.logger.error(f"Error en el proceso de scraping: {e}")
