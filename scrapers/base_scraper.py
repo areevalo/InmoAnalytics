@@ -87,7 +87,7 @@ class BaseScraper:
                 page.goto(target_url, wait_until="domcontentloaded", timeout=60000)
 
                 self.logger.info("Página cargada. Buscando CAPTCHA...")
-                time.sleep(2)
+                time.sleep(1)
 
                 captcha_locator = page.locator(
                     'iframe[title*="captcha"], iframe[src*="captcha"], '
@@ -160,7 +160,7 @@ class BaseScraper:
                 time.sleep(10)
 
                 self.logger.info("Obteniendo contenido final de la página y cookies...")
-                response_html = page.content()
+                response_html = self.get_page_content(page)
                 cookies_dict = context.cookies()
                 # for key in ['didomi_token', '__rtbh.lid', '__rtbh.uid', 'euconsent-v2']:
                 #     value = page.evaluate(f"window.localStorage.getItem('{key}')")
@@ -207,6 +207,21 @@ class BaseScraper:
                  pass
              return False, session, ''
         return True, session, response_html
+
+    def get_page_content(self, page, max_attempts=10, delay=3):
+        for attempt in range(max_attempts):
+            try:
+                # Intentar obtener el contenido
+                content = page.content()
+                self.logger.info(f"Contenido obtenido exitosamente en el intento #{attempt + 1}.")
+                return content
+            except Exception as e:
+                # Registrar el intento fallido y esperar antes de reintentar
+                self.logger.warning(f"Intento #{attempt + 1} de obtener el contenido del navegador fallido: {e}")
+                time.sleep(delay)
+        self.logger.error(f"Se alcanzó el número máximo de intentos ({max_attempts}) "
+                          "para obtener el contenido del navegador")
+        return None
 
     def fetch_html(self, url):
         try:
