@@ -154,37 +154,15 @@ class BaseScraper:
                             self.logger.warning(f"Error durante el scroll: {str(e)}")
                             break
 
-                    # # Esperar a que desaparezcan todos los placeholders (propiedades generadas dinámicamente)
-                    # page.wait_for_selector('.sui-PerfDynamicRendering-placeholder', state='detached', timeout=30000)
-
                 time.sleep(10)
 
                 self.logger.info("Obteniendo contenido final de la página y cookies...")
                 response_html = self.get_page_content(page)
                 cookies_dict = context.cookies()
-                # for key in ['didomi_token', '__rtbh.lid', '__rtbh.uid', 'euconsent-v2']:
-                #     value = page.evaluate(f"window.localStorage.getItem('{key}')")
-                #     if value:
-                #         cookie_dict = {
-                #             "name": key,
-                #             "value": value,
-                #             "domain": '.idealista.com' if not key.startswith('__') else 'www.idealista.com',
-                #             "path": '/',
-                #             "httpOnly": False,
-                #         }
-                #         cookies_dict.append(cookie_dict)
-
                 browser.close()
-            # jar = requests.cookies.RequestsCookieJar()
-            # for cookie in cookies_dict:
-            #     jar.set(
-            #         name=cookie['name'],
-            #         value=cookie['value'],
-            #         domain=cookie['domain'],
-            #         path=cookie.get('path', '/'),
-            #         secure=cookie.get('secure', False)
-            #     )
+
             for cookie in cookies_dict:
+                session = requests.Session()
                 if cookie['name'] == '':
                     continue
                 session.cookies.set(
