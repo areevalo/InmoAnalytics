@@ -49,8 +49,9 @@ class BaseScraper:
         return req_headers_updated
 
     def basic_validate_request(self, resp: Response):
+        ERROR_MARKERS = ("Please enable JS and disable any ad blocker", "You've disabled JavaScript in your web browser")
         if 200 <= resp.status_code < 300:
-            if "Please enable JS and disable any ad blocker" not in resp.text:
+            if not any(marker in resp.text for marker in ERROR_MARKERS):
                 return True
         return False
 
@@ -161,11 +162,11 @@ class BaseScraper:
                 cookies_dict = context.cookies()
                 browser.close()
 
+            s = requests.Session()
             for cookie in cookies_dict:
-                session = requests.Session()
                 if cookie['name'] == '':
                     continue
-                session.cookies.set(
+                s.cookies.set(
                     cookie['name'],
                     cookie['value'],
                     domain=cookie['domain'],
@@ -183,8 +184,8 @@ class BaseScraper:
                      browser.close()
              except Exception:
                  pass
-             return False, session, ''
-        return True, session, response_html
+             return False, s, ''
+        return True, s, response_html
 
     def get_page_content(self, page, max_attempts=10, delay=3):
         for attempt in range(max_attempts):
