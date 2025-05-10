@@ -49,14 +49,14 @@ class BaseScraper:
         return req_headers_updated
 
     def basic_validate_request(self, resp: Response):
-        ERROR_MARKERS = ("Please enable JS and disable any ad blocker", "You've disabled JavaScript in your web browser")
+        ERROR_MARKERS = ["Please enable JS and disable any ad blocker", "You've disabled JavaScript in your web browser"]
         if 200 <= resp.status_code < 300:
             if not any(marker in resp.text for marker in ERROR_MARKERS):
                 return True
         return False
 
     def open_browser_with_session(self, session: Session = None, cookies: list = None, url = None, mandatory_pause: int = None):
-        captcha_timeout = 600 * 1000 # 10 minutos
+        captcha_timeout = 600 * 3000 # 10 minutos
         if not session:
             session = requests.Session()
         try:
@@ -133,7 +133,7 @@ class BaseScraper:
                     # Hacer scroll gradual en incrementos de 300px
                     for scroll_pos in range(0, previous_height, 300):
                         page.evaluate(f'window.scrollTo(0, {scroll_pos})')
-                        time.sleep(0.25 + 0.5 * random())  # Pequeña pausa entre scrolls
+                        time.sleep(0.5 + 0.5 * random())  # Pequeña pausa entre scrolls
                     # Scroll final al fondo
                     page.evaluate('window.scrollTo(0, document.body.scrollHeight)')
                     time.sleep(2)  # Esperar a que se cargue el nuevo contenido
@@ -158,8 +158,16 @@ class BaseScraper:
                 time.sleep(10)
 
                 self.logger.info("Obteniendo contenido final de la página y cookies...")
+                #
+                # if page.url.startswith('https://www.fotocasa.es'):
+                #     soup = BeautifulSoup(self.get_page_content(page), "html.parser")
+                #     for
+                #     pagination_element = soup.find('div', class_='re-Pagination')
+                #     for
+                # else:
                 response_html = self.get_page_content(page)
                 cookies_dict = context.cookies()
+
                 browser.close()
 
             s = requests.Session()

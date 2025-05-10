@@ -34,7 +34,7 @@ class FotocasaScraper(BaseScraper):
     def scrape(self):
         self.logger.info("Empezando scraping en Fotocasa...")
         try:
-            session = requests.Session()
+            # session = requests.Session()
             req_init_url = self.DEFAULT_SEARCH_URL
             ok, session, resp_init_html_content = self.open_browser_with_session(url=req_init_url)
             # TODO: poner la URL por pantalla
@@ -82,7 +82,8 @@ class FotocasaScraper(BaseScraper):
                     # TODO: pasar a parse_helpers
                     property_parsed, property_features_parsed = parse_helpers.get_property_data(
                         resp_property_content,
-                        property_parsed
+                        property_parsed,
+                        self.logger
                     )
                     property_data_to_generate_checksum = {
                         "neighborhood": property_parsed.neighborhood,
@@ -114,7 +115,7 @@ class FotocasaScraper(BaseScraper):
                     cookies = extract_cookies_from_session(session)
                     ok, session, resp_next_page_content = self.open_browser_with_session(session, cookies,
                                                                                          req_next_page_url)
-                    if not ok or ix % 49 == 0:
+                    if not ok or page % 49 == 0:
                         # Abrir navegador Playwright en caso de error al pasar a siguiente página o cada 50 páginas
                         cookies = extract_cookies_from_session(session)
                         ok, session, resp_next_page_content = self.open_browser_with_session(session, cookies, req_next_page_url)
