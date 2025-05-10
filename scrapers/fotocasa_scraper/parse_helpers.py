@@ -24,24 +24,24 @@ floor_key_map = {
     0: "NS/NC",
     1: "Sótano",
     2: "Subsótano",
-    3: "Bajos",
+    3: "Bajo",
     4: "Entresuelo",
     5: "Principal",
-    6: "1ª Planta",
-    7: "2ª Planta",
-    8: "3ª Planta",
-    9: "4ª Planta",
-    10: "5ª Planta",
-    11: "6ª Planta",
-    12: "7ª Planta",
-    13: "8ª Planta",
-    14: "9ª Planta",
-    15: "10ª Planta",
-    16: "11ª Planta",
-    17: "12ª Planta",
-    18: "13ª Planta",
-    19: "14ª Planta",
-    20: "15ª Planta",
+    6: "1",
+    7: "2",
+    8: "3",
+    9: "4",
+    10: "5",
+    11: "6",
+    12: "7",
+    13: "8",
+    14: "9",
+    15: "10",
+    16: "11",
+    17: "12",
+    18: "13",
+    19: "14",
+    20: "15",
     21: "10ª o más",
     "N": "Superior a Planta 15",
     31: "Otros"
@@ -117,7 +117,13 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
                 return floor_value.split()[0][:-1] if floor_value else None
         return None # 1 que es un bajo, un 1º, otro un 4, y otro un 5, 4 una casa (normal)
 
-    def get_type_of_home(title: str):
+    def get_type_of_home(property_data: dict, is_new_home: bool):
+        if is_new_home:
+            # Si es obra nueva, el tipo de vivienda se obtiene del título
+            title = property_data.get('seoTitle', '').strip()
+        else:
+            # Si es segunda mano, el tipo de vivienda se obtiene del título
+            title = property_data.get('propertyTitle', '').strip()
         # Buscar el texto antes de "en venta"
         match = re.search(r'^(.*?) en venta', title)
         if match:
@@ -130,6 +136,14 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
     def get_floor(floor_key_num):
         return floor_key_map.get(floor_key_num, "NS/NC")
 
+    def get_new_home_street(location_data: dict):
+        street_data = location_data.get('street')
+        if street_data.get('number'):
+            return street_data['name'] + ', ' + str(street_data['number'])  # TODO: meter "calle"
+        return street_data['name']
+
+
+
     # Analizar el HTML con BeautifulSoup
     soup = BeautifulSoup(resp_casa_content, "html.parser")
     property_features = PropertyFeatures() # "suelos de calefacción radiante" "suelo radiante" "suelo radiante y refrigerante" "suelos radiantes" "refrigeración por hilo radiante"
@@ -137,6 +151,7 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
     property_basic_data_updated = property_basic_data
 
     try:
+        is_new_home = False
         script_tag = soup.find("script", id="sui-scripts")
         match = re.search(r'window\.__INITIAL_PROPS__\s*=\s*JSON\.parse\("(.+?)"\)', script_tag.string,
                           re.DOTALL) if script_tag and script_tag.string else None
@@ -150,8 +165,67 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
             # TODO: comparar JSON de obra nueva de segunda mano y procesar en métodos diferentes
             property_details = property_data['realEstateAdDetailEntityV2']
             property_old_details = property_data.get('realEstate')
-            if not property_old_details:
+            if False: # not property_old_details:
                 # TODO: método de obtención de datos de obra nueva
+                is_new_home = True
+                # Obtención de datos básicos de localización para actualizar property_basic_data
+                location_data = property_details['address']
+                municipality = location_data.get('locality').strip()
+                if municipality.endswith("apital"):
+                    property_basic_data_updated.municipality = municipality.split()[0]  # Madrid
+                elif municipality.endswith("(Madrid)"):
+                    property_basic_data_updated.municipality = municipality.replace("(Madrid)", "")
+                else:
+                    property_basic_data_updated.municipality = municipality
+                property_basic_data_updated.neighborhood = location_data.get('neighborhood', '')
+                if is_new_home:
+                    property_features.street = get_new_home_street(location_data)
+                else:
+                    property_features.street = property_old_details.get('location', '').strip()
+                # Obtención de características de la propiedad
+                features_data = property_details['features']
+                property_features.area = features_data.get('surface')
+                property_features.rooms = features_data.get('rooms')
+                property_features.baths = features_data.get('bathrooms')
+                floor_key_num = features_data.get('floor')
+                property_features.floor_level = get_floor(floor_key_num)
+                property_features.construction_year = features_data.get('antiquity')
+                orientation_key_num = features_data.get('orientation')
+                property_features.orientation = get_orientation(orientation_key_num)
+                # floor_level = get_floor_number(property_old_details.get("featuresList", []))
+                # property_features.floor_level = floor_level
+                property_features.energy_calification = property_details['energyCertificate'].get(
+                    'energyEfficiencyRatingType', '').strip()
+                description = property_details.get('description')
+                # Lo único distinto entre obra nueva y segunda mano es el título y calle
+                property_features.type_of_home = get_type_of_home(property_data, is_new_home)
+                if description and "suelo radiante" in description.lower():
+                    property_features.underfloor_heating = True
+                for feature in property_details.get('extraFeatures', []):
+                    feature_text = feature.lower().strip()
+                    if feature_text == "ascensor":
+                        property_features.elevator = True
+                    elif feature_text == "aire acondicionado":
+                        property_features.air_conditioning = True
+                    elif feature_text == "armarios":
+                        property_features.fitted_wardrobes = True
+                    elif feature_text == "terraza":
+                        property_features.terrace = True
+                    elif "garaje" in feature_text:
+                        property_features.garage = True
+                    elif "piscina" in feature_text:
+                        property_features.pool = True
+                    elif "jardín" in feature_text:
+                        property_features.garden = True
+                    elif feature_text == "calefacción":
+                        property_features.heating = True
+                    elif feature_text == "trastero":
+                        property_features.storage_room = True
+                    elif feature_text == "balcón":
+                        property_features.balcony = True
+                    else:
+                        pass  # feature_text not in ("pista de tenis", "gimnasio", "zona infantil", "no amueblado", "zona comunitaria", "lavadero", "sistema video vigilancia cctv 24h", "alarma", "internet", "servicio portería", "nevera", "lavadora", "horno", "suite - con baño", "cocina equipada", "puerta blindada", "electrodomésticos", "parquet", "cocina office", "gres cerámica", "estado", "amueblado", "emisiones", "agua caliente", "habitaciones:", "baños:", "superficie:", "patio")
+
                 return property_basic_data_updated, property_features
             # Obtención de datos básicos de localización para actualizar property_basic_data
             location_data = property_details['address']
@@ -163,8 +237,10 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
             else:
                 property_basic_data_updated.municipality = municipality
             property_basic_data_updated.neighborhood = location_data.get('neighborhood','')
-            property_basic_data_updated.street = property_old_details.get('location', '')
-            # ['street']['name'] + ', ' + property_data['realEstateAdDetailEntityV2']['address']['street']['number']
+            if is_new_home:
+                property_features.street = get_new_home_street(location_data)
+            else:
+                property_features.street = property_old_details.get('location', '').strip()
             # Obtención de características de la propiedad
             features_data = property_details['features']
             property_features.area = features_data.get('surface')
@@ -175,8 +251,7 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
             property_features.construction_year = features_data.get('antiquity')
             orientation_key_num = features_data.get('orientation')
             property_features.orientation = get_orientation(orientation_key_num)
-            property_title = property_data.get('propertyTitle', '').strip()
-            property_features.type_of_home = get_type_of_home(property_title)
+            property_features.type_of_home = get_type_of_home(property_data, is_new_home)
             # floor_level = get_floor_number(property_old_details.get("featuresList", []))
             # property_features.floor_level = floor_level
             property_features.energy_calification = property_details['energyCertificate'].get('energyEfficiencyRatingType', '').strip()

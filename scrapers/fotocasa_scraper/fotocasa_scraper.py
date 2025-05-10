@@ -112,6 +112,7 @@ class FotocasaScraper(BaseScraper):
                                               "número de página desde el que desea scrapear")
                     next_page_path_url = parse_helpers.get_next_page_path(html_content, num_init_page, self.logger)
                     req_next_page_url = urljoin(self.base_url, next_page_path_url)
+                    self.logger.info("Pasando a la página {} ({})...".format(page + 1, req_next_page_url))
                     cookies = extract_cookies_from_session(session)
                     ok, session, resp_next_page_content = self.open_browser_with_session(session, cookies,
                                                                                          req_next_page_url)
@@ -119,7 +120,7 @@ class FotocasaScraper(BaseScraper):
                         # Abrir navegador Playwright en caso de error al pasar a siguiente página o cada 50 páginas
                         cookies = extract_cookies_from_session(session)
                         ok, session, resp_next_page_content = self.open_browser_with_session(session, cookies, req_next_page_url)
-                    self.logger.info("Pasando a la página {} ({})...".format(page + 1, req_next_page_url))
+
                     continue
                 else:
                     self.logger.info("No hay más páginas para procesar")
