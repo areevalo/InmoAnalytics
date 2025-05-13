@@ -107,9 +107,9 @@ class FotocasaScraper(BaseScraper):
                     num_init_page = None
                     # TODO: REVISAR QUE VALOR COOKIE O HEADER O ALMACENAMIENTO LOCAL CAMBIA EN EL CAMBIO DE PAGINA / revisar por qué la segunda página nunca me pide captcha
                     time.sleep(3 + 2 * random.random())
-                    if not resp_next_page_content:
-                        num_init_page = input("¿Desea seguir el flujo normal de descarga? En caso contrario introduzca el "
-                                              "número de página desde el que desea scrapear")
+                    # if not resp_next_page_content:
+                    #     num_init_page = input("¿Desea seguir el flujo normal de descarga? En caso contrario introduzca el "
+                    #                           "número de página desde el que desea scrapear")
                     next_page_path_url = parse_helpers.get_next_page_path(html_content, num_init_page, self.logger)
                     req_next_page_url = urljoin(self.base_url, next_page_path_url)
                     self.logger.info("Pasando a la página {} ({})...".format(page + 1, req_next_page_url))

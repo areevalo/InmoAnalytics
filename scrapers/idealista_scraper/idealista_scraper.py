@@ -126,9 +126,9 @@ class IdealistaScraper(BaseScraper):
                 if "Siguiente" in str(html_content):
                     num_next_page = None
                     time.sleep(3 + 5 * random.random())
-                    if not resp_next_page_content:
-                        num_next_page = input("¿Desea seguir el flujo normal de descarga? En caso contrario introduzca el "
-                                              "número de página desde el que desea scrapear")
+                    # if not resp_next_page_content:
+                    #     num_next_page = input("¿Desea seguir el flujo normal de descarga? En caso contrario introduzca el "
+                    #                           "número de página desde el que desea scrapear")
                     next_page_url = parse_helpers.get_next_page_path(html_content, num_next_page, self.logger)
                     req_next_page_url = urljoin(self.base_url, next_page_url)
                     resp_next_page = session.get(

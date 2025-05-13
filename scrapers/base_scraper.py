@@ -6,7 +6,6 @@ import requests
 from bs4 import BeautifulSoup
 from playwright.sync_api import sync_playwright
 from requests import Response, Session
-
 from utils.scraper_logger import ScraperLogger
 
 
@@ -22,6 +21,19 @@ def extract_cookies_from_session(session):
         }
         for cookie in session.cookies
     ]
+
+
+def click_accept_cookies(page):
+    try:
+        # Esperar a que el botón de aceptar cookies esté visible
+        page.locator('button:has-text("Aceptar")').wait_for(state='visible', timeout=10000)
+        # Hacer clic en el botón de aceptar cookies
+        page.locator('button:has-text("Aceptar")').click()
+        time.sleep(2)
+        return True
+    except Exception as e:
+        print(f"Error al hacer clic en el botón de aceptar cookies: {e}")
+        return False
 
 
 class BaseScraper:
@@ -141,6 +153,13 @@ class BaseScraper:
                     return new_height != previous_height
 
                 if page.url.startswith('https://www.fotocasa.es'):
+                    if page.url == self.DEFAULT_SEARCH_URL:
+                        cookies_validated = False
+                        cookies_max_retries = 5
+                        n_retry = 0
+                        while cookies_validated == False and n_retry < cookies_max_retries:
+                            n_retry += 1
+                            cookies_validated = click_accept_cookies(page)
                     # Hacer scroll hasta que no haya más contenido nuevo
                     has_more_content = True
                     while has_more_content:

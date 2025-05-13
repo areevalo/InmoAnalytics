@@ -5,6 +5,11 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
 from custom_types import PropertyFeatures, Property
+from scrapers.constants import STREET_KEYWORDS, UNDERFLOOR_HEATING_KEYWORDS
+
+FLOOR_LEVEL_KEYWORDS = [
+    "planta", "entreplanta", "bajo", "sótano", "principal"
+]
 
 
 def get_properties(resp_casas_content: bytes, base_url: str):
@@ -50,9 +55,14 @@ def get_properties(resp_casas_content: bytes, base_url: str):
                         street = title[street_start_position:commas[0]].strip()
                         neighborhood = title[commas[0] + 1:commas[-1]].strip()
                 else:
-                    # Si solo hay una coma, asumir que todo después de 'en' hasta la coma es el barrio
-                    street = None
-                    neighborhood = title[street_start_position:commas[0]].strip()
+                    # Si solo hay una coma, verificar si lo que está antes de la coma parece ser una calle
+                    possible_street = title[street_start_position:commas[0]].strip().lower()
+                    if any(keyword in possible_street for keyword in STREET_KEYWORDS):
+                        street = title[street_start_position:commas[0]].strip()
+                        neighborhood = None
+                    else:
+                        street = None
+                        neighborhood = title[street_start_position:commas[0]].strip()
             else:
                 # Si no hay comas, asumir que todo después de 'en' es el municipio
                 municipality = title[street_start_position:].strip()
@@ -60,6 +70,8 @@ def get_properties(resp_casas_content: bytes, base_url: str):
             # Capitalizar los resultados para consistencia
             street = street[0].upper() + street[1:] if street else None
             neighborhood = neighborhood[0].upper() + neighborhood[1:] if neighborhood else None
+            if neighborhood:
+                pass
             municipality = municipality[0].upper() + municipality[1:] if municipality else None
 
         property_data = Property(
@@ -107,10 +119,7 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property):
         else:
             location = "NS/NC"
 
-        if location != property_basic_data.municipality:
-            print("DIFERENCIA DE LOCALIZACION")
-
-        # Extraer precio # TODO: revisar ownership status y underfloor heating
+        # Extraer precio # TODO: revisar ownership status
         # price_element = main_data.find("strong", class_="price")
         # price = int(price_element.text.split()[0].replace(".", "")) if price_element else 0
 
@@ -122,7 +131,7 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property):
         # TODO: ¿crear checksum con la descripción?
         property_description = main_data.find("div", class_="comment")
         if property_description:
-            if "suelo radiante" in property_description.text.lower():
+            if any(keyword in property_description.text.lower() for keyword in UNDERFLOOR_HEATING_KEYWORDS):
                 property_features.underfloor_heating = True
 
         # Extraer detalles adicionales
@@ -214,11 +223,13 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property):
                         print('que')
                     continue
 
-                if "planta" in fila_text_str or "bajo" in fila_text_str:
+                if any(keyword in fila_text_str.lower() for keyword in FLOOR_LEVEL_KEYWORDS):
                     if fila_text_str.startswith("planta"):
                         property_features.floor_level = fila_text_str.split()[1][0].strip()
-                    elif 'bajo' in fila_text_str:
+                    elif "bajo" in fila_text_str:
                         property_features.floor_level = "Bajo"
+                    elif "entreplanta" in fila_text_str:
+                        property_features.floor_level = "Entreplanta"
                     else:
                         print("que")  # TODO: Verificar que es un numero de plantas porque no es un piso
                     continue

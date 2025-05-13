@@ -6,6 +6,7 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
 from custom_types import Property, PropertyFeatures
+from scrapers.constants import UNDERFLOOR_HEATING_KEYWORDS
 from utils.scraper_logger import ScraperLogger
 
 orientation_key_map = {
@@ -42,10 +43,26 @@ floor_key_map = {
     18: "13",
     19: "14",
     20: "15",
-    21: "10ª o más",
+    21: "Superior a Planta 15", # "10ª o más"
     "N": "Superior a Planta 15",
-    31: "Otros"
+    31: "Superior a Planta 15" # "Otros"
 }
+
+
+current_year = time.localtime().tm_year
+
+antiquity_key_map = {
+    1: f">{current_year - 1}",  # "Menos de 1 año"
+    2: f"{current_year - 5}-{current_year - 1}",  # "1 a 5 años"
+    3: f"{current_year - 10}-{current_year - 5}",  # "5 a 10 años"
+    4: f"{current_year - 20}-{current_year - 10}",  # "10 a 20 años"
+    5: f"{current_year - 30}-{current_year - 20}",  # "20 a 30 años"
+    6: f"{current_year - 50}-{current_year - 30}",  # "30 a 50 años"
+    7: f"{current_year - 70}-{current_year - 50}",  # "50 a 70 años"
+    8: f"{current_year - 100}-{current_year - 70}",  # "70 a 100 años"
+    9: f"<{current_year - 100}"  # "+ 100 años"
+}
+
 
 def get_properties(html_content: bytes, base_url: str):
     # Analizar el HTML con BeautifulSoup
@@ -118,12 +135,8 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
         return None # 1 que es un bajo, un 1º, otro un 4, y otro un 5, 4 una casa (normal)
 
     def get_type_of_home(property_data: dict, is_new_home: bool):
-        if is_new_home:
-            # Si es obra nueva, el tipo de vivienda se obtiene del título
-            title = property_data.get('seoTitle', '').strip()
-        else:
-            # Si es segunda mano, el tipo de vivienda se obtiene del título
-            title = property_data.get('propertyTitle', '').strip()
+        title_key = "seoTitle" if is_new_home else "propertyTitle"
+        title = property_data.get(title_key, '').strip()
         # Buscar el texto antes de "en venta"
         match = re.search(r'^(.*?) en venta', title)
         if match:
@@ -136,22 +149,23 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
     def get_floor(floor_key_num):
         return floor_key_map.get(floor_key_num, "NS/NC")
 
-    def get_new_home_street(location_data: dict):
+    def get_antiquity(antiquity_key_num):
+        return antiquity_key_map.get(int(antiquity_key_num), "NS/NC")
+
+    def get_street(location_data: dict):
         street_data = location_data.get('street')
         if street_data.get('number'):
             return street_data['name'] + ', ' + str(street_data['number'])  # TODO: meter "calle"
         return street_data['name']
 
-
-
     # Analizar el HTML con BeautifulSoup
     soup = BeautifulSoup(resp_casa_content, "html.parser")
-    property_features = PropertyFeatures() # "suelos de calefacción radiante" "suelo radiante" "suelo radiante y refrigerante" "suelos radiantes" "refrigeración por hilo radiante"
+    property_features = PropertyFeatures()
     property_features.property = property_basic_data
     property_basic_data_updated = property_basic_data
-
+    # TODO: evitar procesar  nuda propiedad, subastas, oportunidad de inversión por alquiler u okupado
     try:
-        is_new_home = False
+
         script_tag = soup.find("script", id="sui-scripts")
         match = re.search(r'window\.__INITIAL_PROPS__\s*=\s*JSON\.parse\("(.+?)"\)', script_tag.string,
                           re.DOTALL) if script_tag and script_tag.string else None
@@ -162,71 +176,10 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
             property_data = json.loads(json_string)  # Convertir a un diccionario de Python
             logger.info(f"JSON con datos encontrado en el HTML. Procesando datos de la propiedad...")
             # Extraer los datos de interés
-            # TODO: comparar JSON de obra nueva de segunda mano y procesar en métodos diferentes
             property_details = property_data['realEstateAdDetailEntityV2']
             property_old_details = property_data.get('realEstate')
-            if False: # not property_old_details:
-                # TODO: método de obtención de datos de obra nueva
-                is_new_home = True
-                # Obtención de datos básicos de localización para actualizar property_basic_data
-                location_data = property_details['address']
-                municipality = location_data.get('locality').strip()
-                if municipality.endswith("apital"):
-                    property_basic_data_updated.municipality = municipality.split()[0]  # Madrid
-                elif municipality.endswith("(Madrid)"):
-                    property_basic_data_updated.municipality = municipality.replace("(Madrid)", "")
-                else:
-                    property_basic_data_updated.municipality = municipality
-                property_basic_data_updated.neighborhood = location_data.get('neighborhood', '')
-                if is_new_home:
-                    property_features.street = get_new_home_street(location_data)
-                else:
-                    property_features.street = property_old_details.get('location', '').strip()
-                # Obtención de características de la propiedad
-                features_data = property_details['features']
-                property_features.area = features_data.get('surface')
-                property_features.rooms = features_data.get('rooms')
-                property_features.baths = features_data.get('bathrooms')
-                floor_key_num = features_data.get('floor')
-                property_features.floor_level = get_floor(floor_key_num)
-                property_features.construction_year = features_data.get('antiquity')
-                orientation_key_num = features_data.get('orientation')
-                property_features.orientation = get_orientation(orientation_key_num)
-                # floor_level = get_floor_number(property_old_details.get("featuresList", []))
-                # property_features.floor_level = floor_level
-                property_features.energy_calification = property_details['energyCertificate'].get(
-                    'energyEfficiencyRatingType', '').strip()
-                description = property_details.get('description')
-                # Lo único distinto entre obra nueva y segunda mano es el título y calle
-                property_features.type_of_home = get_type_of_home(property_data, is_new_home)
-                if description and "suelo radiante" in description.lower():
-                    property_features.underfloor_heating = True
-                for feature in property_details.get('extraFeatures', []):
-                    feature_text = feature.lower().strip()
-                    if feature_text == "ascensor":
-                        property_features.elevator = True
-                    elif feature_text == "aire acondicionado":
-                        property_features.air_conditioning = True
-                    elif feature_text == "armarios":
-                        property_features.fitted_wardrobes = True
-                    elif feature_text == "terraza":
-                        property_features.terrace = True
-                    elif "garaje" in feature_text:
-                        property_features.garage = True
-                    elif "piscina" in feature_text:
-                        property_features.pool = True
-                    elif "jardín" in feature_text:
-                        property_features.garden = True
-                    elif feature_text == "calefacción":
-                        property_features.heating = True
-                    elif feature_text == "trastero":
-                        property_features.storage_room = True
-                    elif feature_text == "balcón":
-                        property_features.balcony = True
-                    else:
-                        pass  # feature_text not in ("pista de tenis", "gimnasio", "zona infantil", "no amueblado", "zona comunitaria", "lavadero", "sistema video vigilancia cctv 24h", "alarma", "internet", "servicio portería", "nevera", "lavadora", "horno", "suite - con baño", "cocina equipada", "puerta blindada", "electrodomésticos", "parquet", "cocina office", "gres cerámica", "estado", "amueblado", "emisiones", "agua caliente", "habitaciones:", "baños:", "superficie:", "patio")
+            is_new_home = True if not property_old_details else False
 
-                return property_basic_data_updated, property_features
             # Obtención de datos básicos de localización para actualizar property_basic_data
             location_data = property_details['address']
             municipality = location_data.get('locality').strip()
@@ -236,11 +189,8 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
                 property_basic_data_updated.municipality = municipality.replace("(Madrid)", "")
             else:
                 property_basic_data_updated.municipality = municipality
-            property_basic_data_updated.neighborhood = location_data.get('neighborhood','')
-            if is_new_home:
-                property_features.street = get_new_home_street(location_data)
-            else:
-                property_features.street = property_old_details.get('location', '').strip()
+            property_basic_data_updated.neighborhood = location_data.get('neighborhood') or location_data.get('municipality')
+            property_features.street = get_street(location_data)  # property_features.street = property_old_details.get('location', '').strip()
             # Obtención de características de la propiedad
             features_data = property_details['features']
             property_features.area = features_data.get('surface')
@@ -248,16 +198,16 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
             property_features.baths = features_data.get('bathrooms')
             floor_key_num = features_data.get('floor')
             property_features.floor_level = get_floor(floor_key_num)
-            property_features.construction_year = features_data.get('antiquity')
+            antiquity_key_num = features_data.get('antiquity')
+            property_features.construction_year = get_antiquity(antiquity_key_num) if antiquity_key_num else "NS/NC"
             orientation_key_num = features_data.get('orientation')
             property_features.orientation = get_orientation(orientation_key_num)
             property_features.type_of_home = get_type_of_home(property_data, is_new_home)
-            # floor_level = get_floor_number(property_old_details.get("featuresList", []))
-            # property_features.floor_level = floor_level
             property_features.energy_calification = property_details['energyCertificate'].get('energyEfficiencyRatingType', '').strip()
-            description = property_details.get('description')
-            if description and "suelo radiante" in description.lower():
-                property_features.underfloor_heating = True
+            property_description = property_details.get('description')
+            if property_description:
+                if any(keyword in property_description.lower() for keyword in UNDERFLOOR_HEATING_KEYWORDS):
+                    property_features.underfloor_heating = True
             for feature in property_details.get('extraFeatures', []):
                 feature_text = feature.lower().strip()
                 if feature_text == "ascensor":
@@ -268,7 +218,7 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
                     property_features.fitted_wardrobes = True
                 elif feature_text == "terraza":
                     property_features.terrace = True
-                elif "garaje" in feature_text:
+                elif "garaje" in feature_text or "parking" in feature_text:
                     property_features.garage = True
                 elif "piscina" in feature_text:
                     property_features.pool = True
@@ -281,11 +231,10 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
                 elif feature_text == "balcón":
                     property_features.balcony = True
                 else:
-                    pass # feature_text not in ("pista de tenis", "gimnasio", "zona infantil", "no amueblado", "zona comunitaria", "lavadero", "sistema video vigilancia cctv 24h", "alarma", "internet", "servicio portería", "nevera", "lavadora", "horno", "suite - con baño", "cocina equipada", "puerta blindada", "electrodomésticos", "parquet", "cocina office", "gres cerámica", "estado", "amueblado", "emisiones", "agua caliente", "habitaciones:", "baños:", "superficie:", "patio")
-
+                    logger.info(f"No se ha podido procesar la característica {feature_text} de la propiedad {property_basic_data.url}")
         else:
+            # TODO: quitar si no es necesario
             logger.warning("No se encontró el JSON en el HTML. Continuando con la obtención de datos de forma manual..")
-            # TODO: evitar procesar  nuda propiedad, subastas, oportunidad de inversión por alquiler u okupado
             # Extraer del título el tipo de vivienda
             title = soup.find("h1", class_="re-DetailHeader-propertyTitle").text.strip()
             street_start_position = title.rfind(' en ')
