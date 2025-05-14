@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-jg2yt0y(7xjd+tl4znp%875+h)b=ewvm5b!$e$oyeb$bfo)!7v
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['inmoanalytics.es', 'www.inmoanalytics.es', '83.33.42.9', '52.166.18.84', 'localhost']
 
 
 # Application definition
@@ -61,7 +61,7 @@ ROOT_URLCONF = 'inmoanalytics.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
