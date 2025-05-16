@@ -98,13 +98,14 @@ class IdealistaScraper(BaseScraper):
                     resp_property_content = resp_property.content
                     ok = self.basic_validate_request(resp_property)
                     if not ok:
+                        # TODO: verificar funcionamiento del reintento
                         self.logger.error(f"Error en la petición de la vivienda #{ix}. Reintentando con Playwright...")
                         cookies = extract_cookies_from_session(session)
                         ok, session, resp_property_content = self.open_browser_with_session(session, cookies, property_parsed.url)
                         # return False
 
+                    propery_data_parsed = parse_helpers.get_property_data(resp_property_content)
                     # TODO: pasar a parse_helpers
-                    propery_data_parsed = parse_helpers.get_property_data(resp_property_content, property_parsed)
                     property_data_to_generate_checksum = {
                         "neighborhood": property_parsed.neighborhood,
                         "municipality": property_parsed.municipality,

@@ -19,9 +19,6 @@ from django.urls import path, include
 from . import views
 
 urlpatterns = [
+    path('admin/', admin.site.urls),
     path('', views.property_list, name='property-list'),
-    # Otras rutas aquí
 ]
-# urlpatterns = [
-#     path('admin/', admin.site.urls),
-# ]

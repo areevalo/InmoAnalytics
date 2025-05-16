@@ -89,7 +89,8 @@ DATABASES = {
         'CONN_MAX_AGE': 600,  # Tiempo en segundos para mantener la conexión activa
         'OPTIONS': {
             'connect_timeout': 15,  # Tiempo máximo para establecer conexión (en segundos)
-            'charset': 'utf8mb4'
+            'charset': 'utf8mb4',
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES,NO_ENGINE_SUBSTITUTION'",
         }
     }
 }
@@ -129,7 +130,8 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'static'
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

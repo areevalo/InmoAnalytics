@@ -6,7 +6,8 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
 from custom_types import Property, PropertyFeatures
-from scrapers.constants import UNDERFLOOR_HEATING_KEYWORDS
+from scrapers.constants import UNDERFLOOR_HEATING_KEYWORDS, OCCUPIED_PROPERTY_KEYWORDS, \
+    BARE_OWNERSHIP_PROPERTY_KEYWORDS, RENTED_PROPERTY_KEYWORDS, AUCTION_PROPERTY_KEYWORDS
 from utils.scraper_logger import ScraperLogger
 
 orientation_key_map = {
@@ -108,7 +109,7 @@ def get_properties(html_content: bytes, base_url: str):
         #     neighborhood = neighborhood[0].upper() + neighborhood[1:] if neighborhood else None
         municipality = "Madrid"  # Asumir municipio por defecto si no está presente
 
-        property_data = Property(
+        property_basic_data = Property(
             url=urljoin(base_url, url_path),
             price=int(price.replace('.', '').rstrip("€")) if price != 'A consultar' else None,
             municipality=municipality,
@@ -118,50 +119,52 @@ def get_properties(html_content: bytes, base_url: str):
             checksum=""
         )
 
-        properties.append(property_data)
+        properties.append(property_basic_data)
 
     return properties
+
+def get_type_of_home(property_data: dict, is_new_home: bool):
+    title_key = "seoTitle" if is_new_home else "propertyTitle"
+    title = property_data.get(title_key, '').strip()
+    # Buscar el texto antes de "en venta"
+    match = re.search(r'^(.*?) en venta', title)
+    if match:
+        return match.group(1).strip()
+    return None
+
+def get_orientation(orientation_key_num: int):
+    return orientation_key_map.get(orientation_key_num, "NS/NC")
+
+def get_floor(floor_key_num):
+    return floor_key_map.get(floor_key_num, "NS/NC")
+
+def get_antiquity(antiquity_key_num):
+    return antiquity_key_map.get(int(antiquity_key_num), "NS/NC")
+
+def get_street(location_data: dict):
+    street_data = location_data.get('street')
+    street_name = street_data.get('name')
+    if street_name and street_name[-1].isupper():
+        prepositions = ["de", "del", "la", "el", "los", "las", "y", "en", "a", "por", "con", "sin", "o", "u", "al"]
+        street_name_words = street_name.lower().split()
+        street_name = " ".join(
+            [w if i in [0,1] and w in prepositions else (w.capitalize() if w not in prepositions else w)
+             for i, w in enumerate(street_name_words)]
+        )
+    street_number = street_data.get('number')
+    if street_number:
+        return street_name.strip() + ', ' + str(street_number)
+    return street_name.strip() if street_name and not "n/a" in street_name.lower() else None
+
 
 def get_property_data(resp_casa_content: bytes, property_basic_data: Property, logger: ScraperLogger):
     """
        Procesa el contenido HTML de un anuncio inmobiliario para extraer datos estructurados.
        Si algún dato no está disponible, se asignan valores por defecto.
        """
-    def get_floor_number(features_list):
-        for f in features_list:
-            if f.get("label") == "floor":
-                floor_value = f.get("value")
-                return floor_value.split()[0][:-1] if floor_value else None
-        return None # 1 que es un bajo, un 1º, otro un 4, y otro un 5, 4 una casa (normal)
-
-    def get_type_of_home(property_data: dict, is_new_home: bool):
-        title_key = "seoTitle" if is_new_home else "propertyTitle"
-        title = property_data.get(title_key, '').strip()
-        # Buscar el texto antes de "en venta"
-        match = re.search(r'^(.*?) en venta', title)
-        if match:
-            return match.group(1).strip()
-        return None
-
-    def get_orientation(orientation_key_num: int):
-        return orientation_key_map.get(orientation_key_num, "NS/NC")
-
-    def get_floor(floor_key_num):
-        return floor_key_map.get(floor_key_num, "NS/NC")
-
-    def get_antiquity(antiquity_key_num):
-        return antiquity_key_map.get(int(antiquity_key_num), "NS/NC")
-
-    def get_street(location_data: dict):
-        street_data = location_data.get('street')
-        if street_data.get('number'):
-            return street_data['name'] + ', ' + str(street_data['number'])  # TODO: meter "calle"
-        return street_data['name']
-
     # Analizar el HTML con BeautifulSoup
     soup = BeautifulSoup(resp_casa_content, "html.parser")
     property_features = PropertyFeatures()
-    property_features.property = property_basic_data
     property_basic_data_updated = property_basic_data
     # TODO: evitar procesar  nuda propiedad, subastas, oportunidad de inversión por alquiler u okupado
     try:
@@ -190,7 +193,7 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
             else:
                 property_basic_data_updated.municipality = municipality
             property_basic_data_updated.neighborhood = location_data.get('neighborhood') or location_data.get('municipality')
-            property_features.street = get_street(location_data)  # property_features.street = property_old_details.get('location', '').strip()
+            property_basic_data_updated.street = get_street(location_data)  # property_features.street = property_old_details.get('location', '').strip()
             # Obtención de características de la propiedad
             features_data = property_details['features']
             property_features.area = features_data.get('surface')
@@ -208,6 +211,15 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
             if property_description:
                 if any(keyword in property_description.lower() for keyword in UNDERFLOOR_HEATING_KEYWORDS):
                     property_features.underfloor_heating = True
+                # Análisis de estado de la propiedad
+                if any(keyword in property_description.lower() for keyword in OCCUPIED_PROPERTY_KEYWORDS):
+                    property_features.ownership_status = "Ocupada ilegalmente"
+                if any(keyword in property_description.lower() for keyword in BARE_OWNERSHIP_PROPERTY_KEYWORDS):
+                    property_features.ownership_status = "Nuda propiedad"
+                if any(keyword in property_description.lower() for keyword in RENTED_PROPERTY_KEYWORDS):
+                    property_features.ownership_status = "Alquilada"
+                if any(keyword in property_description.lower() for keyword in AUCTION_PROPERTY_KEYWORDS):
+                    property_features.ownership_status = "Subastada"
             for feature in property_details.get('extraFeatures', []):
                 feature_text = feature.lower().strip()
                 if feature_text == "ascensor":
@@ -231,7 +243,7 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
                 elif feature_text == "balcón":
                     property_features.balcony = True
                 else:
-                    logger.info(f"No se ha podido procesar la característica {feature_text} de la propiedad {property_basic_data.url}")
+                    logger.info(f"No se ha procesado la característica {feature_text} de la propiedad {property_basic_data.url}")
         else:
             # TODO: quitar si no es necesario
             logger.warning("No se encontró el JSON en el HTML. Continuando con la obtención de datos de forma manual..")
@@ -414,7 +426,7 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
             time.sleep(500)
         return property_basic_data_updated, property_features
 
-def get_next_page_path(resp_property_content: bytes, num_init_page: int, logger=None):
+def get_next_page_path(resp_property_content: bytes, num_init_page: int, current_page: int, logger=None):
     # Analizar el HTML con BeautifulSoup
     soup = BeautifulSoup(resp_property_content, "html.parser")
     try:
@@ -425,8 +437,10 @@ def get_next_page_path(resp_property_content: bytes, num_init_page: int, logger=
             next_page_url = re.sub(r'/l/\d+', f'/l/{num_init_page}', next_page_url)
             logger.info(f"Se ha modicado la página a procesar a la número {num_init_page}")
     except Exception as exc:
-        print("No se ha podido obtener la siguiente página a procesar -> {}".format(exc))
-        return None
+        logger.error(f"No se ha podido obtener la siguiente página a procesar -> {exc}.\n"
+                     f"Construyendo la URL de la siguiente página...")
+        next_page_path_url = f"/es/comprar/viviendas/madrid-provincia/todas-las-zonas/l/{current_page + 1}?sortType=publicationDate"
+        return next_page_path_url
 
     return next_page_url
 

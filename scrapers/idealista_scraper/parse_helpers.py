@@ -5,7 +5,8 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
 from custom_types import PropertyFeatures, Property
-from scrapers.constants import STREET_KEYWORDS, UNDERFLOOR_HEATING_KEYWORDS
+from scrapers.constants import UNDERFLOOR_HEATING_KEYWORDS, OCCUPIED_PROPERTY_KEYWORDS, \
+    BARE_OWNERSHIP_PROPERTY_KEYWORDS, RENTED_PROPERTY_KEYWORDS, AUCTION_PROPERTY_KEYWORDS, STREET_KEYWORDS
 
 FLOOR_LEVEL_KEYWORDS = [
     "planta", "entreplanta", "bajo", "sótano", "principal"
@@ -25,56 +26,39 @@ def get_properties(resp_casas_content: bytes, base_url: str):
         description = listing.find("div", class_="item-description").text.strip()
         price = listing.find("span", class_="item-price").text.strip()
         url_path = listing.find("a", class_="item-link").get('href')
+        street = neighborhood = municipality = None
+
         street_start_position = title.find(' en ')
         if street_start_position > -1:
-            # Ajustar para empezar después de 'en'
             street_start_position += len(' en ')
+            after_en = title[street_start_position:].strip()
+            parts = [p.strip() for p in after_en.split(',')]
 
-            # Buscar todas las comas en el título
-            commas = [pos for pos, char in enumerate(title) if char == ',']
-
-            # Inicializar campos
-            street = None
-            neighborhood = None
-            municipality = None
-
-            if commas:
-                # La última coma indica el municipio
-                municipality = title[commas[-1] + 1:].strip()
-
-                # Si hay más de una coma, analizar el contenido entre las comas
-                if len(commas) > 1:
-                    possible_number = title[commas[0] + 1:commas[1]].strip()
-                    # Verificar si el texto entre la primera y segunda coma es un número o un 's/n'
-                    if possible_number.isdigit() or 's/n' in possible_number:
-                        # Incluir el número en la calle
-                        street = title[street_start_position:commas[1]].strip()
-                        neighborhood = title[commas[1] + 1:commas[-1]].strip()
-                    else:
-                        # Si no es un número, asignar como barrio
-                        street = title[street_start_position:commas[0]].strip()
-                        neighborhood = title[commas[0] + 1:commas[-1]].strip()
+            if len(parts) == 1:
+                municipality = parts[0]
+            elif len(parts) == 2:
+                if any(keyword in parts[0].lower() for keyword in STREET_KEYWORDS):
+                    street = parts[0]
                 else:
-                    # Si solo hay una coma, verificar si lo que está antes de la coma parece ser una calle
-                    possible_street = title[street_start_position:commas[0]].strip().lower()
-                    if any(keyword in possible_street for keyword in STREET_KEYWORDS):
-                        street = title[street_start_position:commas[0]].strip()
-                        neighborhood = None
-                    else:
-                        street = None
-                        neighborhood = title[street_start_position:commas[0]].strip()
+                    neighborhood = parts[0]
+                municipality = parts[1]
             else:
-                # Si no hay comas, asumir que todo después de 'en' es el municipio
-                municipality = title[street_start_position:].strip()
+                if parts[-2].isdigit() or 's/n' in parts[-2].lower():
+                    # El penúltimo es número o s/n, así que lo anterior es la calle
+                    street = ', '.join(parts[:-1])
+                    neighborhood = None
+                    municipality = parts[-1]
+                else:
+                    street = ', '.join(parts[:-2])
+                    neighborhood = parts[-2]
+                    municipality = parts[-1]
 
-            # Capitalizar los resultados para consistencia
+            # Capitalizar resultados
             street = street[0].upper() + street[1:] if street else None
             neighborhood = neighborhood[0].upper() + neighborhood[1:] if neighborhood else None
-            if neighborhood:
-                pass
             municipality = municipality[0].upper() + municipality[1:] if municipality else None
 
-        property_data = Property(
+        property_basic_data = Property(
             url=urljoin(base_url, url_path),
             price=int(price.replace('.', '').rstrip("€")),
             municipality=municipality,
@@ -84,12 +68,14 @@ def get_properties(resp_casas_content: bytes, base_url: str):
             checksum=""
         )
 
-        properties.append(property_data)
+        properties.append(property_basic_data)
+
+    # end for listings
 
     return properties
 
 
-def get_property_data(resp_casa_content: bytes, property_basic_data: Property):
+def get_property_data(resp_casa_content: bytes):
     """
     Procesa el contenido HTML de un anuncio inmobiliario para extraer datos estructurados.
     Si algún dato no está disponible, se asignan valores por defecto.
@@ -98,7 +84,6 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property):
     # Analizar el HTML con BeautifulSoup
     soup = BeautifulSoup(resp_casa_content, "html.parser")
     property_features = PropertyFeatures()
-    property_features.property = property_basic_data
 
     try:
         # TODO: evitar procesar  nuda propiedad, subastas, oportunidad de inversión por alquiler u okupado
@@ -109,15 +94,6 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property):
         main_data = soup.find("section", class_="detail-info")
         if not main_data:
             raise ValueError("No se encontró la sección principal de datos.")
-
-        # Extraer ubicación
-        location_element = main_data.find("span", class_="main-info__title-minor")
-        if location_element:
-            location = location_element.text.split(",")[-1].replace(",", "").strip()
-            if location == "Madrid":
-                location = location_element.text.split(",")[0].replace(",", "").strip()
-        else:
-            location = "NS/NC"
 
         # Extraer precio # TODO: revisar ownership status
         # price_element = main_data.find("strong", class_="price")
@@ -133,6 +109,16 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property):
         if property_description:
             if any(keyword in property_description.text.lower() for keyword in UNDERFLOOR_HEATING_KEYWORDS):
                 property_features.underfloor_heating = True
+            # TODO: LLEVAR A MéTODO ACCESIBLE DESDE AMBOS SCRAPERS (BASIC U OTRO FICHERO)
+                # Análisis de estado de la propiedad
+            if any(keyword in property_description.text.lower() for keyword in OCCUPIED_PROPERTY_KEYWORDS):
+                property_features.ownership_status = "Ocupada ilegalmente"
+            if any(keyword in property_description.text.lower() for keyword in BARE_OWNERSHIP_PROPERTY_KEYWORDS):
+                property_features.ownership_status = "Nuda propiedad"
+            if any(keyword in property_description.text.lower() for keyword in RENTED_PROPERTY_KEYWORDS):
+                property_features.ownership_status = "Alquilada"
+            if any(keyword in property_description.text.lower() for keyword in AUCTION_PROPERTY_KEYWORDS):
+                property_features.ownership_status = "Subastada"
 
         # Extraer detalles adicionales
         detalles_datos_elements = main_data.find_all("div", class_="details-property")
@@ -163,15 +149,18 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property):
                     continue
 
                 # Garaje
-                if "garaje" in fila_text_str:
-                    #  TODO: plaza comunitaria o 2 plazas # caso 'plaza de garaje por 55.000 € adicionales'
+                if "garaje" in fila_text_str and not fila_text_str.endswith("adicionales"):
                     property_features.garage = True
                     continue
+                else:
+                    pass
 
                 # Trastero
-                if "trastero" in fila_text_str:
+                if "trastero" in fila_text_str and not fila_text_str.endswith("adicionales"):
                     property_features.storage_room = True
                     continue
+                else:
+                    pass
 
                 # Orientación
                 if "orientación" in fila_text_str:
@@ -228,10 +217,10 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property):
                         property_features.floor_level = fila_text_str.split()[1][0].strip()
                     elif "bajo" in fila_text_str:
                         property_features.floor_level = "Bajo"
-                    elif "entreplanta" in fila_text_str:
-                        property_features.floor_level = "Entreplanta"
+                    elif " planta" not in fila_text_str:
+                        property_features.floor_level = fila_text_str.split()[0].capitalize()
                     else:
-                        print("que")  # TODO: Verificar que es un numero de plantas porque no es un piso
+                        pass
                     continue
 
                 if "ascensor" in fila_text_str:

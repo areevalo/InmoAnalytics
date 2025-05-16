@@ -177,13 +177,6 @@ class BaseScraper:
                 time.sleep(10)
 
                 self.logger.info("Obteniendo contenido final de la página y cookies...")
-                #
-                # if page.url.startswith('https://www.fotocasa.es'):
-                #     soup = BeautifulSoup(self.get_page_content(page), "html.parser")
-                #     for
-                #     pagination_element = soup.find('div', class_='re-Pagination')
-                #     for
-                # else:
                 response_html = self.get_page_content(page)
                 cookies_dict = context.cookies()
 

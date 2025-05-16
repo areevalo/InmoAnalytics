@@ -6,7 +6,7 @@ from scrapers.fotocasa_scraper.fotocasa_scraper import FotocasaScraper
 
 class MainLauncher:
     def __init__(self):
-        self.scrapers = [FotocasaScraper()] # IdealistaScraper(),
+        self.scrapers = [FotocasaScraper(), IdealistaScraper()]
 
     def run_all_scrapers(self):
         with concurrent.futures.ThreadPoolExecutor(max_workers=len(self.scrapers)) as executor:

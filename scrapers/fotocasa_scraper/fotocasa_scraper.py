@@ -62,8 +62,12 @@ class FotocasaScraper(BaseScraper):
                 properties_parsed = parse_helpers.get_properties(html_content, self.BASE_URL)
 
                 for ix, property_parsed in enumerate(properties_parsed):
+                    if property_parsed.price is None:
+                        self.logger.warning(f"No se ha podido obtener el precio de la propiedad #{ix + 1}. "
+                                            f"Omitiendo y pasando a siguiente propiedad...")
+                        continue
                     time.sleep(2 + 1 * random.random())
-                    self.logger.info("Obteniendo datos de la vivienda {} de la página {}...".format(ix + 1, page))
+                    self.logger.info(f"Obteniendo datos de la vivienda {ix + 1} de la página {page}...")
 
                     # Hacer una solicitud HTTP por cada una de las propiedades a procesar
                     resp_property = session.get(
@@ -80,44 +84,43 @@ class FotocasaScraper(BaseScraper):
                         # return False
 
                     # TODO: pasar a parse_helpers
-                    property_parsed, property_features_parsed = parse_helpers.get_property_data(
+                    property_parsed_updated, property_data_parsed = parse_helpers.get_property_data(
                         resp_property_content,
                         property_parsed,
                         self.logger
                     )
                     property_data_to_generate_checksum = {
-                        "neighborhood": property_parsed.neighborhood,
-                        "municipality": property_parsed.municipality,
-                        "floor_level": property_features_parsed.floor_level,
-                        "rooms": property_features_parsed.rooms,
-                        "baths": property_features_parsed.baths,
-                        "area": property_features_parsed.area,
+                        "neighborhood": property_parsed_updated.neighborhood,
+                        "municipality": property_parsed_updated.municipality,
+                        "floor_level": property_data_parsed.floor_level,
+                        "rooms": property_data_parsed.rooms,
+                        "baths": property_data_parsed.baths,
+                        "area": property_data_parsed.area,
                     }
-
                     checksum = self.generate_property_checksum(property_data_to_generate_checksum)
-                    property_parsed.checksum = checksum
-                    property_features_parsed.property = property_parsed
-                    page_scraped_properties.append(property_features_parsed)
+                    property_parsed_updated.checksum = checksum
+                    property_data_parsed.property = property_parsed_updated
+                    page_scraped_properties.append(property_data_parsed)
                 # end for properties_parsed
-                # add_to_batch(page_scraped_properties, self.logger)
+                add_to_batch(page_scraped_properties, self.logger)
                 # Listado con total de propiedades scrapeadas
                 scraped_properties.extend(page_scraped_properties)
 
                 if "Siguiente" in str(html_content):
                     num_init_page = None
-                    # TODO: REVISAR QUE VALOR COOKIE O HEADER O ALMACENAMIENTO LOCAL CAMBIA EN EL CAMBIO DE PAGINA / revisar por qué la segunda página nunca me pide captcha
                     time.sleep(3 + 2 * random.random())
+
                     # if not resp_next_page_content:
                     #     num_init_page = input("¿Desea seguir el flujo normal de descarga? En caso contrario introduzca el "
                     #                           "número de página desde el que desea scrapear")
-                    next_page_path_url = parse_helpers.get_next_page_path(html_content, num_init_page, self.logger)
+                    next_page_path_url = parse_helpers.get_next_page_path(html_content, num_init_page, page, self.logger)
                     req_next_page_url = urljoin(self.base_url, next_page_path_url)
                     self.logger.info("Pasando a la página {} ({})...".format(page + 1, req_next_page_url))
                     cookies = extract_cookies_from_session(session)
                     ok, session, resp_next_page_content = self.open_browser_with_session(session, cookies,
                                                                                          req_next_page_url)
-                    if not ok or page % 49 == 0:
-                        # Abrir navegador Playwright en caso de error al pasar a siguiente página o cada 50 páginas
+                    if not ok:
+                        # Abrir navegador Playwright en caso de error al pasar a siguiente página
                         cookies = extract_cookies_from_session(session)
                         ok, session, resp_next_page_content = self.open_browser_with_session(session, cookies, req_next_page_url)
 
