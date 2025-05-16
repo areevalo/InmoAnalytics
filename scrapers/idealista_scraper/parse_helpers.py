@@ -7,6 +7,7 @@ from bs4 import BeautifulSoup
 from custom_types import PropertyFeatures, Property
 from scrapers.constants import UNDERFLOOR_HEATING_KEYWORDS, OCCUPIED_PROPERTY_KEYWORDS, \
     BARE_OWNERSHIP_PROPERTY_KEYWORDS, RENTED_PROPERTY_KEYWORDS, AUCTION_PROPERTY_KEYWORDS, STREET_KEYWORDS
+from utils.scraper_logger import ScraperLogger
 
 FLOOR_LEVEL_KEYWORDS = [
     "planta", "entreplanta", "bajo", "sótano", "principal"
@@ -75,7 +76,7 @@ def get_properties(resp_casas_content: bytes, base_url: str):
     return properties
 
 
-def get_property_data(resp_casa_content: bytes):
+def get_property_data(resp_casa_content: bytes, logger: ScraperLogger):
     """
     Procesa el contenido HTML de un anuncio inmobiliario para extraer datos estructurados.
     Si algún dato no está disponible, se asignan valores por defecto.
@@ -242,7 +243,7 @@ def get_property_data(resp_casa_content: bytes):
 
     except Exception as exc:
         # TODO: guardar traza de error y error en tabla BD?
-        print("Algún dato es incorrecto. EXCEPCION -> . {}\n{}".format(exc, soup.text))
+        logger.error("Algún dato es incorrecto. EXCEPCION -> . {}\n{}".format(exc, soup.text))
         if "Please enable JS and disable any ad blocker" in soup.text:
             time.sleep(500)
         return property_features

@@ -104,7 +104,7 @@ class IdealistaScraper(BaseScraper):
                         ok, session, resp_property_content = self.open_browser_with_session(session, cookies, property_parsed.url)
                         # return False
 
-                    propery_data_parsed = parse_helpers.get_property_data(resp_property_content)
+                    propery_data_parsed = parse_helpers.get_property_data(resp_property_content, self.logger)
                     # TODO: pasar a parse_helpers
                     property_data_to_generate_checksum = {
                         "neighborhood": property_parsed.neighborhood,
