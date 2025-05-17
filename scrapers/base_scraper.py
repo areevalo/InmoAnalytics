@@ -23,7 +23,7 @@ def extract_cookies_from_session(session):
     ]
 
 
-def click_accept_cookies(page):
+def click_accept_cookies(page, logger: ScraperLogger):
     try:
         # Esperar a que el botón de aceptar cookies esté visible
         page.locator('button:has-text("Aceptar")').wait_for(state='visible', timeout=10000)
@@ -32,7 +32,7 @@ def click_accept_cookies(page):
         time.sleep(2)
         return True
     except Exception as e:
-        print(f"Error al hacer clic en el botón de aceptar cookies: {e}")
+        logger.error(f"Error al hacer clic en el botón de aceptar cookies: {e}")
         return False
 
 
@@ -159,7 +159,7 @@ class BaseScraper:
                         n_retry = 0
                         while cookies_validated == False and n_retry < cookies_max_retries:
                             n_retry += 1
-                            cookies_validated = click_accept_cookies(page)
+                            cookies_validated = click_accept_cookies(page, self.logger)
                     # Hacer scroll hasta que no haya más contenido nuevo
                     has_more_content = True
                     while has_more_content:
