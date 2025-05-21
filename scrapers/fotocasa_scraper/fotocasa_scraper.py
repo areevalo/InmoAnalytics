@@ -144,4 +144,5 @@ class FotocasaScraper(BaseScraper):
             df.to_excel(writer, index=False)
             writer._save()
         except Exception as e:
+            # TODO: cuando se cierra el navegador, salta excepción en vez de reintentar
             self.logger.error("Error en el proceso de scraping: {}".format(e))

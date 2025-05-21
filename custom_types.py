@@ -8,7 +8,7 @@ class Property:
     neighborhood: str
     origin: str
     checksum: str
-    street: str = "NS/NC"
+    street: str = None
 
 
 @dataclass
@@ -17,10 +17,10 @@ class PropertyFeatures:
     rooms: int = 0
     baths: int = 0
     area: float = 0
-    type_of_home: str = "NS/NC"
+    type_of_home: str = None
     pool: bool = False
     garage: bool = False
-    energy_calification: str = "NS/NC"
+    energy_calification: str = None
     garden: bool = False
     fitted_wardrobes: bool = False
     air_conditioning: bool = False
@@ -30,7 +30,7 @@ class PropertyFeatures:
     storage_room: bool = False
     ownership_status: str = "Disponible"
     balcony: bool = False
-    floor_level: str = "NS/NC"
+    floor_level: str = None
     elevator: bool = False
-    orientation: str = "NS/NC"
-    construction_year: str = "NS/NC"
+    orientation: str = None
+    construction_year: str = None

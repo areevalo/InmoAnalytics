@@ -58,6 +58,8 @@ def get_properties(resp_casas_content: bytes, base_url: str):
             street = street[0].upper() + street[1:] if street else None
             neighborhood = neighborhood[0].upper() + neighborhood[1:] if neighborhood else None
             municipality = municipality[0].upper() + municipality[1:] if municipality else None
+            if municipality == "San Agustin de Guadalix":
+                municipality = "San Agustín del Guadalix"
 
         property_basic_data = Property(
             url=urljoin(base_url, url_path),
@@ -90,7 +92,8 @@ def get_property_data(resp_casa_content: bytes, logger: ScraperLogger):
         # TODO: evitar procesar  nuda propiedad, subastas, oportunidad de inversión por alquiler u okupado
         # Extraer del título el tipo de vivienda
         title = soup.find("span", class_="main-info__title-main")
-        property_features.type_of_home = title.text.split(' en ')[0].strip()
+        home_type = title.text.split(' en ')[0].strip()
+        property_features.type_of_home = home_type if home_type != "Casa o chalet independiente" else "Casa o chalet"
         # Extraer la sección principal de los datos
         main_data = soup.find("section", class_="detail-info")
         if not main_data:
@@ -166,8 +169,10 @@ def get_property_data(resp_casa_content: bytes, logger: ScraperLogger):
                 # Orientación
                 if "orientación" in fila_text_str:
                     orientation_parts = fila_text_str.split()
-                    orientation_list = orientation_parts[1:] if len(orientation_parts) > 1 else ["NS/NC"]
-                    property_features.orientation = "".join([x.capitalize() for x in orientation_list]).replace(",", "/").strip()
+                    orientation_list = orientation_parts[1:] if len(orientation_parts) > 1 else []
+                    if orientation_list:
+                        property_features.orientation = ("".join([x.capitalize() for x in orientation_list]).
+                                                         replace(",", "/").strip())
                     continue
 
                 # Año de construcción o estado (obra nueva)
@@ -215,13 +220,18 @@ def get_property_data(resp_casa_content: bytes, logger: ScraperLogger):
 
                 if any(keyword in fila_text_str.lower() for keyword in FLOOR_LEVEL_KEYWORDS):
                     if fila_text_str.startswith("planta"):
-                        property_features.floor_level = fila_text_str.split()[1][0].strip()
+                        floor_level = fila_text_str.split()[1].replace('º', '').replace('ª', '')
                     elif "bajo" in fila_text_str:
-                        property_features.floor_level = "Bajo"
+                        floor_level = "Bajo"
                     elif " planta" not in fila_text_str:
-                        property_features.floor_level = fila_text_str.split()[0].capitalize()
+                        floor_level = fila_text_str.split()[0].capitalize()
                     else:
-                        pass
+                        # Número de plantas de casas o chalets
+                        continue
+                    # Normalizado con Fotocasa
+                    floor_level = "Entresuelo" if floor_level == "Entreplanta" else floor_level
+
+                    property_features.floor_level = floor_level if floor_level != "-" else 1
                     continue
 
                 if "ascensor" in fila_text_str:

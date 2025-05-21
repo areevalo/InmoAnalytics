@@ -21,4 +21,6 @@ from . import views
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', views.property_list, name='property-list'),
+    path('ajax/get_neighborhoods/', views.get_neighborhoods, name='get_neighborhoods'),
+
 ]

@@ -11,7 +11,7 @@ from scrapers.constants import UNDERFLOOR_HEATING_KEYWORDS, OCCUPIED_PROPERTY_KE
 from utils.scraper_logger import ScraperLogger
 
 orientation_key_map = {
-    0: "NS/NC",
+    0: None,
     1: "Norte",
     2: "Noroeste",
     3: "Noreste",
@@ -23,7 +23,7 @@ orientation_key_map = {
 }
 
 floor_key_map = {
-    0: "NS/NC",
+    0: None,
     1: "Sótano",
     2: "Subsótano",
     3: "Bajo",
@@ -44,9 +44,9 @@ floor_key_map = {
     18: "13",
     19: "14",
     20: "15",
-    21: "Superior a Planta 15", # "10ª o más"
-    "N": "Superior a Planta 15",
-    31: "Superior a Planta 15" # "Otros"
+    21: ">15", # "10ª o más"
+    "N": ">15",
+    31: ">15" # "Otros"
 }
 
 
@@ -129,17 +129,21 @@ def get_type_of_home(property_data: dict, is_new_home: bool):
     # Buscar el texto antes de "en venta"
     match = re.search(r'^(.*?) en venta', title)
     if match:
-        return match.group(1).strip()
+        property_type = match.group(1).strip()
+        if property_type.lower() == "casa adosada":
+            return "Chalet adosado"
+        else:
+            return property_type
     return None
 
 def get_orientation(orientation_key_num: int):
-    return orientation_key_map.get(orientation_key_num, "NS/NC")
+    return orientation_key_map.get(orientation_key_num)
 
 def get_floor(floor_key_num):
-    return floor_key_map.get(floor_key_num, "NS/NC")
+    return floor_key_map.get(floor_key_num)
 
 def get_antiquity(antiquity_key_num):
-    return antiquity_key_map.get(int(antiquity_key_num), "NS/NC")
+    return antiquity_key_map.get(int(antiquity_key_num))
 
 def get_street(location_data: dict):
     street_data = location_data.get('street')
@@ -192,7 +196,11 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
                 property_basic_data_updated.municipality = municipality.replace("(Madrid)", "")
             else:
                 property_basic_data_updated.municipality = municipality
-            property_basic_data_updated.neighborhood = location_data.get('neighborhood') or location_data.get('municipality')
+
+            if property_basic_data_updated.municipality == "El Boalo - Cerceda – Mataelpino":
+                property_basic_data_updated.municipality = location_data.get('municipality')
+            else:
+               property_basic_data_updated.neighborhood = location_data.get('neighborhood') or location_data.get('municipality')
             property_basic_data_updated.street = get_street(location_data)  # property_features.street = property_old_details.get('location', '').strip()
             # Obtención de características de la propiedad
             features_data = property_details['features']
@@ -202,11 +210,12 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
             floor_key_num = features_data.get('floor')
             property_features.floor_level = get_floor(floor_key_num)
             antiquity_key_num = features_data.get('antiquity')
-            property_features.construction_year = get_antiquity(antiquity_key_num) if antiquity_key_num else "NS/NC"
+            property_features.construction_year = get_antiquity(antiquity_key_num) if antiquity_key_num else None
             orientation_key_num = features_data.get('orientation')
             property_features.orientation = get_orientation(orientation_key_num)
             property_features.type_of_home = get_type_of_home(property_data, is_new_home)
-            property_features.energy_calification = property_details['energyCertificate'].get('energyEfficiencyRatingType', '').strip()
+            energy_calification = property_details['energyCertificate'].get('energyEfficiencyRatingType', '').strip()
+            property_features.energy_calification = energy_calification if energy_calification else None
             property_description = property_details.get('description')
             if property_description:
                 if any(keyword in property_description.lower() for keyword in UNDERFLOOR_HEATING_KEYWORDS):
@@ -403,7 +412,7 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
                         pass
                     else:
                         property_features.heating = True
-                elif label == "planta" and property_features.floor_level == "NS/NC":
+                elif label == "planta" and property_features.floor_level is None:
                     if "bajo" in value:
                         property_features.floor_level = "Bajo"
                     elif "sótano" in value:
@@ -412,7 +421,7 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
                         property_features.floor_level = value.split()[0][:-1]
                 else:
                     if label == 'planta':
-                        if property_features.floor_level == "NS/NC":
+                        if property_features.floor_level is None:
                             pass
                     else:
                         pass
