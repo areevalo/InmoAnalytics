@@ -1,0 +1,193 @@
+// Devuelve true si hay algún filtro activo
+function hasActiveFilters() {
+    const form = document.getElementById('filters-form');
+    for (const el of form.elements) {
+        if (
+            el.name &&
+            !["submit", "button", "reset", "hidden"].includes(el.type)
+        ) {
+            if (el.type === "checkbox" && el.checked) return true;
+            if (el.id === "price_min" && Number(el.value) > 0) return true;
+            if (el.id === "price_max" && Number(el.value) < 1000000) return true;
+            if (
+                el.type !== "checkbox" &&
+                el.id !== "price_min" &&
+                el.id !== "price_max" &&
+                el.value !== "" &&
+                el.value !== "0"
+            ) return true;
+        }
+    }
+    return false;
+}
+// Al hacer clic en el botón de "Exportar a Excel", se envía el formulario y aparece un mensaje de carga
+document.getElementById('export-excel-btn').addEventListener('click', function(e) {
+    e.preventDefault();
+
+    if (!hasActiveFilters()) {
+        alert("Por favor, aplica al menos un filtro antes de exportar para evitar descargas masivas.");
+        return;
+    }
+
+    var loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    loadingModal.show();
+
+    const form = document.querySelector('form');
+    const max = 1000000;
+    const priceMaxInput = document.getElementById('price_max');
+    let originalName = priceMaxInput.getAttribute('name');
+    if (parseInt(priceMaxInput.value) === max) {
+        priceMaxInput.removeAttribute('name');
+    }
+
+    const formData = new FormData(form);
+
+    // Restaurar el name después de crear el FormData
+    if (!priceMaxInput.hasAttribute('name') && originalName) {
+        priceMaxInput.setAttribute('name', originalName);
+    }
+
+    fetch("{% url 'export_properties_excel' %}?" + new URLSearchParams(formData), {
+        method: 'GET',
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.blob())
+    .then(blob => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = "propiedades.xlsx";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+        loadingModal.hide();
+    })
+    .catch(() => {
+        loadingModal.hide();
+        alert("Error: la generación del Excel ha sido interrumpida. Por favor, " +
+            "vuelve a intentarlo en unos instantes y no recargues la página mientras tanto.");
+    });
+});
+// Al hacer clic en el botón de "Quitar filtros" se restablecen los filtros
+document.getElementById('clear-filters-btn').addEventListener('click', function(e) {
+    e.preventDefault();
+    const form = document.querySelector('form');
+    form.reset();
+
+    // Restablecer municipio a su valor por defecto (vacío)
+    const municipio = document.getElementById('id_municipality');
+    if (municipio) {
+        municipio.selectedIndex = 0;
+    }
+
+    // Restablecer y deshabilitar el select de barrio
+    const barrio = document.getElementById('id_neighborhood');
+    if (barrio) {
+        barrio.innerHTML = '<option value="">Introduce un municipio</option>';
+        barrio.disabled = true;
+    }
+
+    // Restablecer el campo de superficie mínima
+    document.getElementById('min_area').value = '';
+
+    // Reinicia los rangos de precio
+    document.getElementById('price_min').value = 0;
+    document.getElementById('price_max').value = 1000000;
+    updatePriceVals();
+
+    // Limpia la URL
+    window.history.replaceState({}, document.title, window.location.pathname);
+});
+// document.getElementById('clear-filters-btn').addEventListener('click', function(e) {
+//     e.preventDefault();
+//     const form = document.querySelector('form');
+//     form.reset();
+//     // Desmarca manualmente todos los checkboxes
+//     form.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+//     form.querySelectorAll('select').forEach(function(select) {
+//         if (select.querySelector('option[value=""]')) {
+//             select.value = "";
+//         } else {
+//             select.selectedIndex = 0;
+//         }
+//     });
+//     // Restablecer el select de barrio
+//     const barrio = document.getElementById('id_neighborhood');
+//     barrio.disabled = true;
+//     barrio.innerHTML = '<option value="">Introduce un municipio</option>';
+//     // Restablecer el campo de superficie mínima
+//     document.getElementById('min_area').value = '';
+//     // Reinicia los rangos de precio
+//     document.getElementById('price_min').value = 0;
+//     document.getElementById('price_max').value = 1000000;
+//     updatePriceVals();
+//     // Limpia la URL
+//     window.history.replaceState({}, document.title, window.location.pathname);
+// });
+// Al cambiar el municipio, actualiza los barrios
+document.getElementById('id_municipality').addEventListener('change', function() {
+    const municipio = this.querySelector('select, input').value;
+    const barrio = document.getElementById('id_neighborhood');
+    barrio.innerHTML = '';
+    if (municipio) {
+        fetch(`/ajax/get_neighborhoods/?municipality=${encodeURIComponent(municipio)}`)
+            .then(response => response.json())
+            .then(data => {
+                barrio.disabled = false;
+                barrio.innerHTML = '<option value="">Cualquiera</option>';
+                data.neighborhoods.forEach(function(n) {
+                    barrio.innerHTML += `<option value="${n}">${n}</option>`;
+                });
+            });
+    } else {
+        barrio.disabled = true;
+        barrio.innerHTML = '<option value="">Introduce un municipio</option>';
+    }
+});
+function formatPrice(val) {
+    if (parseInt(val) === 1000000) return 'Sin límite';
+    return parseInt(val).toLocaleString('es-ES') + ' €';
+}
+// Actualiza los valores mostrados de los rangos de precio mínimo y máximo
+function updatePriceVals() {
+    const max = 1000000;
+    const minVal = document.getElementById('price_min').value;
+    const maxVal = document.getElementById('price_max').value;
+    const formatOpts = { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 0 };
+    document.getElementById('min_price_val').textContent = new Intl.NumberFormat('es-ES', formatOpts).format(minVal);
+    document.getElementById('max_price_val').textContent = maxVal >= max ? "Sin límite" : new Intl.NumberFormat('es-ES', formatOpts).format(maxVal);
+}
+  // Ejecuta al cargar
+  document.addEventListener("DOMContentLoaded", updatePriceVals);
+
+// Controla que el precio mínimo no supere al máximo y viceversa
+document.getElementById('price_min').addEventListener('input', function() {
+    const min = Number(this.value);
+    const maxInput = document.getElementById('price_max');
+    let max = Number(maxInput.value);
+    if (min > max) {
+        maxInput.value = min;
+        updatePriceVals();
+    }
+});
+document.getElementById('price_max').addEventListener('input', function() {
+    const max = Number(this.value);
+    const minInput = document.getElementById('price_min');
+    let min = Number(minInput.value);
+    if (max < min) {
+        minInput.value = max;
+        updatePriceVals();
+    }
+});
+
+// Al enviar el formulario, si el valor es el máximo, vacía el campo
+document.querySelector('form').addEventListener('submit', function(e) {
+    const max = 1000000;
+    const priceMaxInput = document.getElementById('price_max');
+    if (parseInt(priceMaxInput.value) === max) {
+        priceMaxInput.removeAttribute('name');
+    }
+});

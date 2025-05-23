@@ -1,7 +1,9 @@
+import pandas as pd
+
 from django.core.paginator import Paginator
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render
-from database.models import Properties
+from database.models import Properties, PropertyFeatures
 from .filters import PropertiesFilter
 from .utils import parse_year_range
 
@@ -16,6 +18,69 @@ def get_neighborhoods(request):
             .distinct()
         )
     return JsonResponse({'neighborhoods': [n for n in neighborhoods if n]})
+
+def export_properties_excel(request):
+    f = PropertiesFilter(request.GET, queryset=Properties.objects.all())
+    properties = f.qs.prefetch_related('propertyfeatures_set').all()
+
+    # Define el orden y los nombres de las columnas: (campo, nombre en español)
+    columns = [
+        ('municipality', 'Municipio'),
+        ('neighborhood', 'Barrio'),
+        ('street', 'Calle'),
+        ('price', 'Precio (€)'),
+        ('rooms', 'Habitaciones'),
+        ('baths', 'Baños'),
+        ('area', 'Superficie (m²)'),
+        ('type_of_home', 'Tipo de vivienda'),
+        ('ownership_status', 'Estado de propiedad'),
+        ('floor_level', 'Planta'),
+        ('elevator', 'Ascensor'),
+        ('garage', 'Garaje'),
+        ('pool', 'Piscina'),
+        ('terrace', 'Terraza'),
+        ('balcony', 'Balcón'),
+        ('garden', 'Jardín'),
+        ('fitted_wardrobes', 'Armarios empotrados'),
+        ('air_conditioning', 'Aire acondicionado'),
+        ('heating', 'Calefacción'),
+        ('underfloor_heating', 'Suelo radiante'),
+        ('storage_room', 'Trastero'),
+        ('orientation', 'Orientación'),
+        ('energy_calification', 'Calificación energética'),
+        ('construction_year', 'Año construcción'),
+        ('url', 'URL'),
+    ]
+    boolean_fields = {
+        'elevator', 'garage', 'pool', 'terrace', 'balcony', 'garden',
+        'fitted_wardrobes', 'air_conditioning', 'heating', 'underfloor_heating', 'storage_room'
+    }
+    data = []
+    for prop in properties:
+        features = prop.propertyfeatures_set.first()
+        row = []
+        for field, _ in columns:
+            if hasattr(prop, field):
+                value = getattr(prop, field)
+            elif features and hasattr(features, field):
+                value = getattr(features, field)
+            else:
+                value = "Sin datos"
+            if value is None:
+                value = "Sin datos"
+            # Formatea los booleanos como "Sí"/"No"
+            if field in boolean_fields and value != "Sin datos":
+                value = "Sí" if value else "No"
+            row.append(value)
+        data.append(row)
+
+    # Nombres para las columnas del Excel
+    column_names = [col[1] for col in columns]
+    df = pd.DataFrame(data, columns=column_names)
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = 'attachment; filename=propiedades.xlsx'
+    df.to_excel(response, index=False)
+    return response
 
 def property_list(request):
     f = PropertiesFilter(request.GET, queryset=Properties.objects.all().order_by('-id'))

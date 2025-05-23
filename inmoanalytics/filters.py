@@ -138,7 +138,8 @@ class PropertiesFilter(django_filters.FilterSet):
         widget=forms.NumberInput(attrs={
             'id': 'min_area',
             'class': 'form-control',
-            'placeholder': 'Mínimo'
+            'placeholder': 'Mínimo',
+            'min': 0
         })
     )
     ownership_status = django_filters.ChoiceFilter(
