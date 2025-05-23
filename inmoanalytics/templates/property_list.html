@@ -20,7 +20,8 @@
             </div>
             <div class="col-md-4" id="neighborhood-container">
                 <label for="id_neighborhood">Barrio:</label>
-                <select class="form-select" id="id_neighborhood" name="neighborhood" disabled>
+                <select class="form-select" id="id_neighborhood" name="neighborhood" disabled
+                    {% if request.GET.neighborhood %} data-selected="{{ request.GET.neighborhood }}"{% endif %}>
                     <option value="">Introduce un municipio</option>
                 </select>
             </div>

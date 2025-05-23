@@ -77,23 +77,23 @@ document.getElementById('clear-filters-btn').addEventListener('click', function(
     const form = document.querySelector('form');
     form.reset();
 
-    // Restablecer municipio a su valor por defecto (vacío)
-    const municipio = document.getElementById('id_municipality');
-    if (municipio) {
-        municipio.selectedIndex = 0;
-    }
+    // Restablece todos los selects a su primer valor
+    form.querySelectorAll('select').forEach(function(select) {
+        select.selectedIndex = 0;
+        // Si es el select de barrio, deshabilítalo y pon la opción por defecto
+        if (select.id === 'id_neighborhood') {
+            select.innerHTML = '<option value="">Introduce un municipio</option>';
+            select.disabled = true;
+        }
+    });
 
-    // Restablecer y deshabilitar el select de barrio
-    const barrio = document.getElementById('id_neighborhood');
-    if (barrio) {
-        barrio.innerHTML = '<option value="">Introduce un municipio</option>';
-        barrio.disabled = true;
-    }
+    // Desmarca todos los checkboxes
+    form.querySelectorAll('input[type="checkbox"]').forEach(function(checkbox) {
+        checkbox.checked = false;
+    });
 
-    // Restablecer el campo de superficie mínima
+    // Restaura los rangos de precio y superficie
     document.getElementById('min_area').value = '';
-
-    // Reinicia los rangos de precio
     document.getElementById('price_min').value = 0;
     document.getElementById('price_max').value = 1000000;
     updatePriceVals();
@@ -161,7 +161,27 @@ function updatePriceVals() {
     document.getElementById('max_price_val').textContent = maxVal >= max ? "Sin límite" : new Intl.NumberFormat('es-ES', formatOpts).format(maxVal);
 }
   // Ejecuta al cargar
-  document.addEventListener("DOMContentLoaded", updatePriceVals);
+document.addEventListener('DOMContentLoaded', function() {
+    updatePriceVals();
+
+    const municipioSelect = document.querySelector('#id_municipality select, #id_municipality input');
+    const barrio = document.getElementById('id_neighborhood');
+    if (municipioSelect && municipioSelect.value) {
+        fetch(`/ajax/get_neighborhoods/?municipality=${encodeURIComponent(municipioSelect.value)}`)
+            .then(response => response.json())
+            .then(data => {
+                barrio.disabled = false;
+                barrio.innerHTML = '<option value="">Cualquiera</option>';
+                data.neighborhoods.forEach(function(n) {
+                    barrio.innerHTML += `<option value="${n}">${n}</option>`;
+                });
+                // Selecciona el barrio si ya estaba seleccionado
+                if (barrio.dataset.selected) {
+                    barrio.value = barrio.dataset.selected;
+                }
+            });
+    }
+});
 
 // Controla que el precio mínimo no supere al máximo y viceversa
 document.getElementById('price_min').addEventListener('input', function() {
