@@ -211,3 +211,20 @@ document.querySelector('form').addEventListener('submit', function(e) {
         priceMaxInput.removeAttribute('name');
     }
 });
+
+// Guardar el estado del acordeón en localStorage
+const collapseBoolean = document.getElementById('collapseBoolean');
+collapseBoolean.addEventListener('show.bs.collapse', function () {
+    localStorage.setItem('accordionBooleanOpen', 'true');
+});
+collapseBoolean.addEventListener('hide.bs.collapse', function () {
+    localStorage.setItem('accordionBooleanOpen', 'false');
+});
+
+// Restaurar el estado al cargar la página
+document.addEventListener('DOMContentLoaded', function () {
+    if (localStorage.getItem('accordionBooleanOpen') === 'true') {
+        const bsCollapse = new bootstrap.Collapse(collapseBoolean, { show: true, toggle: false });
+        bsCollapse.show();
+    }
+});

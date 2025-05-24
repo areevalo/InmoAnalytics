@@ -58,8 +58,6 @@ def get_properties(resp_casas_content: bytes, base_url: str):
             street = street[0].upper() + street[1:] if street else None
             neighborhood = neighborhood[0].upper() + neighborhood[1:] if neighborhood else None
             municipality = municipality[0].upper() + municipality[1:] if municipality else None
-            if municipality == "San Agustin de Guadalix":
-                municipality = "San Agustín del Guadalix"
 
         property_basic_data = Property(
             url=urljoin(base_url, url_path),

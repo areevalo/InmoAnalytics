@@ -84,6 +84,8 @@ class IdealistaScraper(BaseScraper):
                 if resp_next_page_content:
                     html_content = resp_next_page_content
                 properties_parsed = parse_helpers.get_properties(html_content, base_url)
+                if properties_parsed:
+                    properties_parsed = self.normalize_data(properties_parsed)
 
                 for ix, property_parsed in enumerate(properties_parsed):
                     time.sleep(3 + 2 * random.random())

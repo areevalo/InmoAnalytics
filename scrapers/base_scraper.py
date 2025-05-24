@@ -243,6 +243,27 @@ class BaseScraper:
         cursor.execute(query, tuple(data.values()))
         db_connection.commit()
 
-    def normalize_data(self, data):
-        # TODO: Implementar lógica común para normalizar datos (ejemplo: convertir precios a números)
-        pass
+    def normalize_data(self, data_parsed):
+        unique_property = False
+        if not isinstance(data_parsed, list):
+            properties_parsed = [data_parsed]
+            unique_property = True
+        else:
+            properties_parsed = data_parsed
+        for property_parsed in properties_parsed:
+            if property_parsed.municipality == "San Agustin de Guadalix":
+                property_parsed.municipality = "San Agustín del Guadalix"
+            elif property_parsed.municipality.endswith("apital"):
+                property_parsed.municipality = property_parsed.municipality.split()[0]  # Madrid
+            elif property_parsed.municipality.endswith("(Madrid)"):
+                property_parsed.municipality = property_parsed.municipality.replace("(Madrid)", "")
+
+            if property_parsed.neighborhood:
+                if " - " in property_parsed.neighborhood:
+                    # Si hay un guón con espacios, eliminar los espacios
+                    property_parsed.neighborhood = property_parsed.neighborhood.replace(" - ", "-").strip()
+
+        if unique_property:
+            return properties_parsed[0]
+
+        return properties_parsed

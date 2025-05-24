@@ -89,6 +89,7 @@ class FotocasaScraper(BaseScraper):
                         property_parsed,
                         self.logger
                     )
+                    property_parsed_updated = self.normalize_data(property_parsed_updated)
                     property_data_to_generate_checksum = {
                         "neighborhood": property_parsed_updated.neighborhood,
                         "municipality": property_parsed_updated.municipality,

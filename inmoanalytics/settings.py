@@ -43,7 +43,7 @@ INSTALLED_APPS = [
     'scrapers',  # Módulo para scrapers
     'analytics',  # Análisis y estadísticas
     'exports',  # Exportación de datos
-    'scheduler',  # Programación de tareas
+    'scheduler'  # Programación de tareas
 ]
 
 MIDDLEWARE = [

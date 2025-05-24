@@ -8,7 +8,8 @@
 </head>
 <body>
 <div class="container mt-4">
-    <h1 class="text-center">InmoAnalytics Madrid</h1>
+    <h2 class="text-center fw-bold">InmoAnalytics Madrid</h2>
+    <p class="text-center text-muted">Filtra y explora propiedades de la Comunidad de Madrid</p>
     <hr>
     <h3 class="text-decoration-underline mb-4">Búsqueda de propiedades en venta:</h3>
     <form id="filters-form" method="get" class="row g-3">
@@ -68,12 +69,12 @@
           <div class="accordion-item">
             <h2 class="accordion-header" id="headingBoolean">
               <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapseBoolean" aria-expanded="false" aria-controls="collapseBoolean">
-                Características adicionales
+                Mostrar opciones de filtrado
               </button>
             </h2>
             <div id="collapseBoolean" class="accordion-collapse collapse" aria-labelledby="headingBoolean" data-bs-parent="#booleanFiltersAccordion">
               <div class="accordion-body">
-                  <div class="row">
+                  <div class="row mb-4">
                       <div class="col-md-2">
                         {{ filter.form.construction_type.label_tag }}
                         {{ filter.form.construction_type }}
@@ -99,7 +100,7 @@
                         {{ filter.form.construction_year }}
                     </div>
                   </div>
-                  <div class="row mt-4">
+                  <div class="row">
                       <div class="col-md-3 form-check">
                         {{ filter.form.air_conditioning }}
                         <label class="form-check-label" for="{{ filter.form.air_conditioning.id_for_label }}">Aire acondicionado</label>
@@ -155,19 +156,22 @@
         <button type="submit" class="btn btn-primary btn-lg btn-fixed">Filtrar</button>
         <button type="button" class="btn btn-success btn-lg btn-fixed" id="export-excel-btn">Exportar a Excel</button>
       </div>
-
+        <div class="mt-2 mt-md-0">
       <!-- Botón limpiar filtros -->
-      <button type="reset" class="btn btn-outline-secondary mt-2 mt-md-0" id="clear-filters-btn">
-        Limpiar filtros
-      </button>
+          <button type="reset" class="btn btn-outline-secondary px-4 py-2" id="clear-filters-btn">
+            Limpiar filtros
+          </button>
+        </div>
     </div>
     </form>
     <div class="alert alert-info mt-3" role="alert">
         Algunos datos adicionales solo están disponibles en la exportación a Excel.
     </div>
     <hr>
-{#    <h3 class="text-decoration-underline mb-4">Resultados:</h3>#}
-    <table class="table table-striped mt-4">
+{#    {% if properties %}#}
+{#      <p class="text-muted">Mostrando {{ properties|length }} propiedades filtradas.</p>#}
+{#    {% endif %}{#    <h3 class="text-decoration-underline mb-4">Resultados:</h3>#}
+    <table class="table table-striped align-middle mt-4">
         <caption>Listado de propiedades filtradas</caption>
         <thead>
             <tr>
@@ -184,34 +188,34 @@
                 <th>URL</th>
             </tr>
         </thead>
-        <tbody>
-        {% for prop in properties %}
-            <tr>
-                <td>{{ prop.municipality|default:"Sin datos" }}</td>
-                <td>{{ prop.neighborhood|default:"Sin datos" }}</td>
-                <td>{{ prop.price|default:"Sin datos" }}</td>
-                <td>{{ prop.area|default:"Sin datos" }}</td>
-                <td>{{ prop.rooms|default:"Sin datos" }}</td>
-                <td>{{ prop.baths|default:"Sin datos" }}</td>
-{#                <td>{{ prop.elevator|default:"Sin datos" }}</td>#}
-{#                <td>{{ prop.garage|default:"Sin datos" }}</td>#}
-                <td>{{ prop.type_of_home|default:"Sin datos" }}</td>
-                <td>{{ prop.is_new_home|default:"Sin datos" }}</td>
-                <td>
-                    {% if prop.url %}
-                        <a href="{{ prop.url }}" target="_blank" class="btn btn-sm btn-outline-primary">Ver</a>
-                    {% else %}
-                        Sin datos
-                    {% endif %}
-                </td>
-            </tr>
-        {% empty %}
-            <tr>
-                <td class="text-center table-warning fw-bold py-4" colspan="12">
-                    No hay resultados. Introduce otros filtros
-                </td>
-            </tr>
-        {% endfor %}
+       <tbody>
+            {% for prop in properties %}
+                <tr>
+                    <td class="{% if not prop.municipality %}text-muted-italic{% endif %}">{{ prop.municipality|default:"Sin datos" }}</td>
+                    <td class="{% if not prop.neighborhood %}text-muted-italic{% endif %}">{{ prop.neighborhood|default:"Sin datos" }}</td>
+                    <td class="{% if not prop.price %}text-muted-italic{% endif %}">{{ prop.price|default:"Sin datos" }}</td>
+                    <td class="{% if not prop.area %}text-muted-italic{% endif %}">{{ prop.area|default:"Sin datos" }}</td>
+                    <td class="{% if not prop.rooms %}text-muted-italic{% endif %}">{{ prop.rooms|default:"Sin datos" }}</td>
+                    <td class="{% if not prop.baths %}text-muted-italic{% endif %}">{{ prop.baths|default:"Sin datos" }}</td>
+        {#            <td class="{% if not prop.elevator %}text-muted-italic{% endif %}">{{ prop.elevator|default:"Sin datos" }}</td>#}
+        {#            <td class="{% if not prop.garage %}text-muted-italic{% endif %}">{{ prop.garage|default:"Sin datos" }}</td>#}
+                    <td class="{% if not prop.type_of_home %}text-muted-italic{% endif %}">{{ prop.type_of_home|default:"Sin datos" }}</td>
+                    <td class="{% if not prop.is_new_home %}text-muted-italic{% endif %}">{{ prop.is_new_home|default:"Sin datos" }}</td>
+                    <td>
+                        {% if prop.url %}
+                            <a href="{{ prop.url }}" target="_blank" class="btn btn-sm btn-outline-primary">Ver</a>
+                        {% else %}
+                            <span class="text-muted-italic">Sin datos</span>
+                        {% endif %}
+                    </td>
+                </tr>
+            {% empty %}
+                <tr>
+                    <td class="text-center text-muted py-4" colspan="12">
+                        No hay resultados. Ajusta los filtros e inténtalo de nuevo.
+                    </td>
+                </tr>
+            {% endfor %}
         </tbody>
     </table>
 <nav aria-label="Paginación">

@@ -189,13 +189,8 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
 
             # Obtención de datos básicos de localización para actualizar property_basic_data
             location_data = property_details['address']
-            municipality = location_data.get('locality').strip()
-            if municipality.endswith("apital"):
-                property_basic_data_updated.municipality = municipality.split()[0]  # Madrid
-            elif municipality.endswith("(Madrid)"):
-                property_basic_data_updated.municipality = municipality.replace("(Madrid)", "")
-            else:
-                property_basic_data_updated.municipality = municipality
+            municipality = location_data.get('locality')
+            property_basic_data_updated.municipality = municipality.strip() if municipality else None
 
             if property_basic_data_updated.municipality == "El Boalo - Cerceda – Mataelpino":
                 property_basic_data_updated.municipality = location_data.get('municipality')
