@@ -47,7 +47,7 @@ document.getElementById('export-excel-btn').addEventListener('click', function(e
         priceMaxInput.setAttribute('name', originalName);
     }
 
-    fetch("{% url 'export_properties_excel' %}?" + new URLSearchParams(formData), {
+    fetch(exportUrl + "?" + new URLSearchParams(formData), {
         method: 'GET',
         headers: {
             'X-Requested-With': 'XMLHttpRequest'
