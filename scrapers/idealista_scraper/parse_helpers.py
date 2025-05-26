@@ -13,6 +13,41 @@ FLOOR_LEVEL_KEYWORDS = [
     "planta", "entreplanta", "bajo", "sótano", "principal"
 ]
 
+def get_location_from_title(title: str):
+    municipality = neighborhood = street = None
+    street_start_position = title.find(' en ')
+
+    if street_start_position > -1:
+        street_start_position += len(' en ')
+        after_en = title[street_start_position:].strip()
+        parts = [p.strip() for p in after_en.split(',')]
+
+        if len(parts) == 1:
+            municipality = parts[0]
+        elif len(parts) == 2:
+            if any(keyword in parts[0].lower() for keyword in STREET_KEYWORDS):
+                street = parts[0]
+            else:
+                neighborhood = parts[0]
+            municipality = parts[1]
+        else:
+            if parts[-2].isdigit() or 's/n' in parts[-2].lower():
+                # El penúltimo es número o s/n, así que lo anterior es la calle
+                street = ', '.join(parts[:-1])
+                neighborhood = None
+                municipality = parts[-1]
+            else:
+                street = ', '.join(parts[:-2])
+                neighborhood = parts[-2]
+                municipality = parts[-1]
+
+        # Capitalizar resultados
+        street = street[0].upper() + street[1:] if street else None
+        neighborhood = neighborhood[0].upper() + neighborhood[1:] if neighborhood else None
+        municipality = municipality[0].upper() + municipality[1:] if municipality else None
+
+        return municipality, neighborhood, street
+
 
 def get_properties(resp_casas_content: bytes, base_url: str):
     # Analizar el HTML con BeautifulSoup
@@ -27,37 +62,7 @@ def get_properties(resp_casas_content: bytes, base_url: str):
         description = listing.find("div", class_="item-description").text.strip()
         price = listing.find("span", class_="item-price").text.strip()
         url_path = listing.find("a", class_="item-link").get('href')
-        street = neighborhood = municipality = None
-
-        street_start_position = title.find(' en ')
-        if street_start_position > -1:
-            street_start_position += len(' en ')
-            after_en = title[street_start_position:].strip()
-            parts = [p.strip() for p in after_en.split(',')]
-
-            if len(parts) == 1:
-                municipality = parts[0]
-            elif len(parts) == 2:
-                if any(keyword in parts[0].lower() for keyword in STREET_KEYWORDS):
-                    street = parts[0]
-                else:
-                    neighborhood = parts[0]
-                municipality = parts[1]
-            else:
-                if parts[-2].isdigit() or 's/n' in parts[-2].lower():
-                    # El penúltimo es número o s/n, así que lo anterior es la calle
-                    street = ', '.join(parts[:-1])
-                    neighborhood = None
-                    municipality = parts[-1]
-                else:
-                    street = ', '.join(parts[:-2])
-                    neighborhood = parts[-2]
-                    municipality = parts[-1]
-
-            # Capitalizar resultados
-            street = street[0].upper() + street[1:] if street else None
-            neighborhood = neighborhood[0].upper() + neighborhood[1:] if neighborhood else None
-            municipality = municipality[0].upper() + municipality[1:] if municipality else None
+        municipality, neighborhood, street = get_location_from_title(title)
 
         property_basic_data = Property(
             url=urljoin(base_url, url_path),
@@ -87,7 +92,17 @@ def get_property_data(resp_casa_content: bytes, logger: ScraperLogger):
     property_features = PropertyFeatures()
 
     try:
-        # TODO: evitar procesar  nuda propiedad, subastas, oportunidad de inversión por alquiler u okupado
+        price = soup.find("span", class_="price-container").text.strip()
+        # Valores por defecto para una posible comparación de precios
+        property_features.property = Property(
+            url=soup.find("link", rel="canonical").get('href'),
+            price=int(price.replace('.', '').rstrip("€")),
+            municipality=None,
+            neighborhood=None,
+            street=None,
+            origin="Idealista",
+            checksum=""
+        )
         # Extraer del título el tipo de vivienda
         title = soup.find("span", class_="main-info__title-main")
         home_type = title.text.split(' en ')[0].strip()

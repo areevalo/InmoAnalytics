@@ -10,7 +10,9 @@ class Properties(models.Model):
     street = models.CharField(max_length=255, blank=True, null=True)
     origin = models.CharField(max_length=50)
     checksum = models.CharField(unique=True, max_length=255, blank=True, null=True)
+    active = models.BooleanField(default=True)
     create_time_stamp = models.DateTimeField(auto_now_add=True)
+    update_time_stamp = models.DateTimeField(auto_now=True)
 
     class Meta:
         managed = False

@@ -106,21 +106,21 @@ class IdealistaScraper(BaseScraper):
                         ok, session, resp_property_content = self.open_browser_with_session(session, cookies, property_parsed.url)
                         # return False
 
-                    propery_data_parsed = parse_helpers.get_property_data(resp_property_content, self.logger)
+                    property_data_parsed = parse_helpers.get_property_data(resp_property_content, self.logger)
                     # TODO: pasar a parse_helpers
                     property_data_to_generate_checksum = {
                         "neighborhood": property_parsed.neighborhood,
                         "municipality": property_parsed.municipality,
-                        "floor_level": propery_data_parsed.floor_level,
-                        "rooms": propery_data_parsed.rooms,
-                        "baths": propery_data_parsed.baths,
-                        "area": propery_data_parsed.area,
+                        "floor_level": property_data_parsed.floor_level,
+                        "rooms": property_data_parsed.rooms,
+                        "baths": property_data_parsed.baths,
+                        "area": property_data_parsed.area,
                     }
 
                     checksum = self.generate_property_checksum(property_data_to_generate_checksum)
                     property_parsed.checksum = checksum
-                    propery_data_parsed.property = property_parsed
-                    page_scraped_properties.append(propery_data_parsed)
+                    property_data_parsed.property = property_parsed
+                    page_scraped_properties.append(property_data_parsed)
                 # end for properties_parsed
                 add_to_batch(page_scraped_properties, self.logger)
                 # Listado con total de propiedades scrapeadas

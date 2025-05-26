@@ -69,6 +69,9 @@ document.getElementById('export-excel-btn').addEventListener('click', function(e
         loadingModal.hide();
         alert("Error: la generación del Excel ha sido interrumpida. Por favor, " +
             "vuelve a intentarlo en unos instantes y no recargues la página mientras tanto.");
+    })
+    .finally(() => {
+        loadingModal.hide();
     });
 });
 // Al hacer clic en el botón de "Quitar filtros" se restablecen los filtros
