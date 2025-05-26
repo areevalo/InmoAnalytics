@@ -6,18 +6,16 @@ def compare_property_data(prop_stored, features_stored, prop_parsed, features_pa
     """
     changes = {}
 
-    # Campos comparados que afectan al checksum
-    checksum_fields = ['floor_level', 'rooms', 'baths', 'area']
-    checksum_changed = False
-
     # Comparar precio
     price_field = 'price'
     stored_value = getattr(prop_stored, price_field, None)
     parsed_value = getattr(prop_parsed, price_field, None)
     if stored_value != parsed_value:
         changes[price_field] = parsed_value
-        if field in checksum_fields:
-            checksum_changed = True
+
+    # Campos comparados que afectan al checksum
+    checksum_fields = ['floor_level', 'rooms', 'baths', 'area']
+    checksum_changed = False
 
     # Comparar PropertyFeatures
     if features_stored and features_parsed:

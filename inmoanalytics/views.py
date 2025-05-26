@@ -83,7 +83,7 @@ def export_properties_excel(request):
     return response
 
 def property_list(request):
-    f = PropertiesFilter(request.GET, queryset=Properties.objects.all().order_by('-id'))
+    f = PropertiesFilter(request.GET, queryset=Properties.objects.filter(active=1).order_by('-id'))
     # boolean_fields = [
     #     ('air_conditioning', 'Aire acondicionado'),
     #     ('balcony', 'Balcón'),

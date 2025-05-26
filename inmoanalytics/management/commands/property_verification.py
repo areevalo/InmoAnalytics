@@ -1,3 +1,5 @@
+import random
+import time
 from django.core.management.base import BaseCommand
 
 from database.models import Properties, PropertyFeatures
@@ -7,7 +9,7 @@ from utils.property_compare import compare_property_data
 from django.utils import timezone
 from datetime import timedelta
 
-RENEW_SESSION_EVERY = 30  # Renew session every 30 properties
+RENEW_SESSION_EVERY = 50  # Renew session every 50 properties
 
 class Command(BaseCommand):
     help = "Verifica si las viviendas siguen activas y actualiza cambios"
@@ -23,8 +25,9 @@ class Command(BaseCommand):
             'Fotocasa': {'scraper': fotocasa_scraper, 'session': None, 'count': 0},
         }
 
-        yesterday = timezone.now() - timedelta(days=0)
-        for property_obj in Properties.objects.filter(active=True, update_time_stamp__lte=yesterday).order_by('create_time_stamp', 'update_time_stamp'):
+        # Obtener las propiedades activas que necesitan ser verificadas (no actualizadas hace 3 días o más)
+        yesterday = timezone.now() - timedelta(days=1)
+        for property_obj in Properties.objects.filter(active=True, update_time_stamp__lte=yesterday).order_by('update_time_stamp', 'create_time_stamp'):
             try:
                 if property_obj.origin not in sessions:
                     continue
@@ -66,6 +69,8 @@ class Command(BaseCommand):
                     except PropertyFeatures.DoesNotExist:
                         features_stored = None
 
+                    # Inicializar valor a False para verificar si se modifica alguna característica para hacer 'save'
+                    some_feature_changed = False
                     # Comparar y actualizar solo los campos modificados
                     changes = compare_property_data(property_obj, features_stored, property_parsed, features_parsed)
                     if changes:
@@ -74,12 +79,16 @@ class Command(BaseCommand):
                                 setattr(property_obj, field, value)
                             elif features_stored and hasattr(features_stored, field):
                                 setattr(features_stored, field, value)
+                                some_feature_changed = True
                         property_obj.save()
-                        if features_stored:
+                        if features_stored and some_feature_changed:
                             features_stored.save()
-                        self.stdout.write(f"Property {property_obj.id} updated: {list(changes.keys())}")
+                            self.stdout.write(f"Property {property_obj.id} and features updated: {list(changes.keys())}")
+                        else:
+                            self.stdout.write(f"Property {property_obj.id} updated: {list(changes.keys())}")
                     else:
                         property_obj.save()
                         self.stdout.write(f"Property {property_obj.id} active (no changes)")
+                time.sleep(0.5 + 1 * random.random())  # To avoid hitting the server too hard
             except Exception as e:
                 self.stderr.write(f"Error with {getattr(property_obj, 'url', 'unknown')}: {e}")

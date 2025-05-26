@@ -172,10 +172,11 @@
 {#      <p class="text-muted">Mostrando {{ properties|length }} propiedades filtradas.</p>#}
 {#    {% endif %}{#    <h3 class="text-decoration-underline mb-4">Resultados:</h3>#}
     <table class="table table-striped align-middle mt-4">
+
+        <caption>Listado de {{ page_obj.paginator.count }} propiedades filtradas</caption>
         <p class="text-muted mb-1">
-          Mostrando {{ page_obj.paginator.count }} propiedades encontradas con los filtros aplicados.
+          {{ page_obj.paginator.count }} propiedades encontradas con los filtros aplicados.
         </p>
-        <caption>Listado de propiedades filtradas</caption>
         <thead>
             <tr>
                 <th>Municipio</th>
