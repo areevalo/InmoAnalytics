@@ -48,7 +48,7 @@ class Command(BaseCommand):
                         self.stderr.write(f"Could not open session for {property_obj.origin}")
                         continue
                     session_data['session'] = session
-                    time.sleep(5)
+                    time.sleep(6)
                 session_data['count'] += 1
 
                 response = session_data['session'].get(
@@ -110,7 +110,7 @@ class Command(BaseCommand):
                     else:
                         property_obj.save()
                         self.stdout.write(f"Property {property_obj.id} active (no changes)")
-                time.sleep(2 + 1 * random.random())  # To avoid hitting the server too hard
+                time.sleep(2.5 + 1 * random.random())  # To avoid hitting the server too hard
             except IntegrityError as e:
                 self.stderr.write(f"Error with {getattr(property_obj, 'url', 'unknown')}: checksum already saved: {e}")
                 property_obj.active = False
