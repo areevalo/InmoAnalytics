@@ -98,7 +98,9 @@ class BaseScraper:
                 page = context.new_page()
                 target_url = url if url else self.base_url
                 page.goto(target_url, wait_until="domcontentloaded", timeout=60000)
-
+                if "Se ha detectado un uso indebido El acceso se ha bloqueado" in page.content():
+                    self.logger.error("Se ha bloqueado el acceso a la página por deteccion de bot")
+                    return False, session, ''
                 self.logger.info("Página cargada. Buscando CAPTCHA...")
                 time.sleep(1)
 

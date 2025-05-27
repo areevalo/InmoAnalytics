@@ -46,7 +46,9 @@ class Command(BaseCommand):
                     )
                     if not ok:
                         self.stderr.write(f"Could not open session for {property_obj.origin}")
-                        continue
+                        ok, session, _ = session_data['scraper'].open_browser_with_session(
+                            url=property_obj.url
+                        )
                     session_data['session'] = session
                     time.sleep(6)
                 session_data['count'] += 1
@@ -64,6 +66,10 @@ class Command(BaseCommand):
                         cookies=cookies,
                         url=property_obj.url
                     )
+                    if not ok:
+                        ok, session, _ = session_data['scraper'].open_browser_with_session(
+                            url=property_obj.url
+                        )
 
                 if response.status_code in [404, 301] or "propertyNotFound" in response.url:
                     property_obj.active = False
