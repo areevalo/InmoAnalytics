@@ -4,6 +4,7 @@ from django.core.management.base import BaseCommand
 from django.db import IntegrityError
 
 from database.models import Properties, PropertyFeatures
+from scrapers.base_scraper import BaseScraper, extract_cookies_from_session
 from scrapers.fotocasa_scraper.fotocasa_scraper import FotocasaScraper, parse_helpers as fotocasa_helpers
 from scrapers.idealista_scraper.idealista_scraper import IdealistaScraper, parse_helpers as idealista_helpers
 from utils.property_compare import compare_property_data
@@ -37,8 +38,10 @@ class Command(BaseCommand):
                 session_data = sessions[property_obj.origin]
                 # Renew session every N properties
                 if session_data['session'] is None or session_data['count'] % RENEW_SESSION_EVERY == 0:
+                    cookies = extract_cookies_from_session(session) if session_data['session'] else None
                     ok, session, _ = session_data['scraper'].open_browser_with_session(
                         session=session_data['session'],
+                        cookies=cookies,
                         url=property_obj.url
                     )
                     if not ok:
