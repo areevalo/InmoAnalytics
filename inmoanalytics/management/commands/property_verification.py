@@ -28,7 +28,9 @@ class Command(BaseCommand):
 
         # Obtener las propiedades activas que necesitan ser verificadas (no actualizadas hace 3 días o más)
         yesterday = timezone.now() - timedelta(days=1)
-        for property_obj in Properties.objects.filter(active=True, update_time_stamp__lte=yesterday, origin='Fotocasa').order_by('update_time_stamp', 'create_time_stamp'):
+        # TODO: cambiar a 3 días cuando se llegue a producción
+        # yesterday = timezone.now() - timedelta(days=3)
+        for property_obj in Properties.objects.filter(active=True, update_time_stamp__lte=yesterday).order_by('update_time_stamp', 'create_time_stamp'):
             try:
                 if property_obj.origin not in sessions:
                     continue
