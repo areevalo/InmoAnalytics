@@ -83,13 +83,13 @@ class FotocasaScraper(BaseScraper):
                         ok, session, resp_property_content = self.open_browser_with_session(session, cookies, property_parsed.url)
                         # return False
 
-                    # TODO: pasar a parse_helpers
                     property_parsed_updated, property_data_parsed = parse_helpers.get_property_data(
                         resp_property_content,
                         property_parsed,
                         self.logger
                     )
                     property_parsed_updated = self.normalize_data(property_parsed_updated)
+                    # TODO: pasar a parse_helpers
                     property_data_to_generate_checksum = {
                         "neighborhood": property_parsed_updated.neighborhood,
                         "municipality": property_parsed_updated.municipality,

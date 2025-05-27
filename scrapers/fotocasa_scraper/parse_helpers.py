@@ -208,7 +208,11 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
             property_features.construction_year = get_antiquity(antiquity_key_num) if antiquity_key_num else None
             orientation_key_num = features_data.get('orientation')
             property_features.orientation = get_orientation(orientation_key_num)
-            property_features.type_of_home = get_type_of_home(property_data, is_new_home)
+            type_of_home = get_type_of_home(property_data, is_new_home)
+            if not type_of_home:
+                logger.error(f"No se ha podido obtener el tipo de vivienda de la propiedad {property_basic_data.url}. ")
+                return None, None
+            property_features.type_of_home = type_of_home
             energy_calification = property_details['energyCertificate'].get('energyEfficiencyRatingType', '').strip()
             property_features.energy_calification = energy_calification if energy_calification else None
             property_description = property_details.get('description')
