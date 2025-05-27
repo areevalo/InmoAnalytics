@@ -3,6 +3,7 @@ import pandas as pd
 from django.core.paginator import Paginator
 from django.http import JsonResponse, HttpResponse
 from django.shortcuts import render
+from django.utils.safestring import mark_safe
 from database.models import Properties, PropertyFeatures
 from .filters import PropertiesFilter
 from .utils import parse_year_range
@@ -106,14 +107,14 @@ def property_list(request):
 
     properties = []
     for prop in page_obj:
-        prop.price = f"{prop.price:,.0f} €".replace(",", ".") if prop.price else None
+        prop.price = mark_safe(f"{prop.price:,.0f}&nbsp;€".replace(",", ".")) if prop.price else None
         features = prop.propertyfeatures_set.first()
         if features:
             prop.rooms = features.rooms
             prop.baths = features.baths
             prop.area = f"{features.area} m²" if features.area else None
             # min_year, max_year = parse_year_range(getattr(features, 'construction_year', None))
-            # prop.construction_year_min = min_year
+            prop.construction_year = features.construction_year
             # prop.construction_year_max = max_year
             prop.type_of_home = features.type_of_home
             prop.ownership_status = features.ownership_status

@@ -29,13 +29,22 @@ def add_to_batch(properties_data, logger):
             unique_properties_data = {p.property.checksum: p for p in properties_data}.values()
             properties_to_insert = []
             for p_data in unique_properties_data:
-                # Comprueba si el checksum de cada una de las propiedades que vamos a insertar ya existe en BD
-                if not Properties.objects.filter(checksum=p_data.property.checksum).exists():
+                try:
+                    prop = Properties.objects.get(checksum=p_data.property.checksum)
+                    if not prop.active:
+                        # Eliminar la antigua inactiva y añadir la nueva
+                        prop.delete()
+                        properties_to_insert.append(p_data)
+                        logger.info(f"Propiedad inactiva con checksum duplicado eliminada y nueva añadida: {p_data.property.checksum}")
+                    else:
+                        # TODO: actualizar la propiedad existente si es necesario
+                        logger.info(f"Se ha detectado que el checksum ya existe en BD. Omitimos inserción: {p_data}")
+                except Properties.DoesNotExist:
+                    # No existe, se añade para insertar
                     properties_to_insert.append(p_data)
-                else:
-                    logger.info(f"Se ha detectado que el checksum ya existe en BD. Omitimos inserción: {p_data}")
+                except Exception as e:
+                    pass
             break
-        # TODO: controlar error específico de conexión
         except Exception as e:
             logger.error(f"Error al conectar con la base de datos: {e}. Reintentando...")
             connection_retries+=1

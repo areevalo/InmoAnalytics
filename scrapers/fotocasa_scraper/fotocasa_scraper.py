@@ -132,18 +132,6 @@ class FotocasaScraper(BaseScraper):
 
             self.logger.info("Proceso finalizado a {}".format(datetime.datetime.now()))
 
-            # Crear el DataFrame de Pandas y exportarlo a un archivo Excel
-            self.logger.info("Creando Excel con los datos de viviendas procesadas")
-            # Convertir los diccionarios en filas de datos
-            data = [list(p.values()) for p in scraped_properties]
-
-            # Crear un DataFrame a partir de las filas de datos
-            df = pandas.DataFrame(data, columns=list([0].keys()))
-
-            # Escribir el DataFrame en un archivo Excel
-            writer = pandas.ExcelWriter('idealista_viviendas.xlsx', engine='xlsxwriter')
-            df.to_excel(writer, index=False)
-            writer._save()
         except Exception as e:
             # TODO: cuando se cierra el navegador, salta excepción en vez de reintentar
             self.logger.error("Error en el proceso de scraping: {}".format(e))
