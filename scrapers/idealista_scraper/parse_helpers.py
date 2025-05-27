@@ -268,7 +268,7 @@ def get_property_data(resp_casa_content: bytes, logger: ScraperLogger):
         # TODO: guardar traza de error y error en tabla BD?
         logger.error("Algún dato es incorrecto. EXCEPCION -> . {}\n{}".format(exc, soup.text))
         if "Please enable JS and disable any ad blocker" in soup.text:
-            time.sleep(500)
+            time.sleep(120)
         return property_features
 
 

@@ -432,7 +432,7 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
         # TODO: guardar traza de error y error en tabla BD?
         logger.error("Algún dato es incorrecto. EXCEPCION -> . {}\n{}".format(exc, soup.text))
         if "Please enable JS and disable any ad blocker" in soup.text:
-            time.sleep(500)
+            time.sleep(120)
         return property_basic_data_updated, property_features
 
 def get_next_page_path(resp_property_content: bytes, num_init_page: int, current_page: int, logger=None):
