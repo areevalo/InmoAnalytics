@@ -34,7 +34,10 @@ class Command(BaseCommand):
                 session_data = sessions[property_obj.origin]
                 # Renew session every N properties
                 if session_data['session'] is None or session_data['count'] % RENEW_SESSION_EVERY == 0:
-                    ok, session, _ = session_data['scraper'].open_browser_with_session(url=property_obj.url)
+                    ok, session, _ = session_data['scraper'].open_browser_with_session(
+                        session=session_data['session'],
+                        url=property_obj.url
+                    )
                     if not ok:
                         self.stderr.write(f"Could not open session for {property_obj.origin}")
                         continue
