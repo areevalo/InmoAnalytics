@@ -11,7 +11,7 @@ from utils.property_compare import compare_property_data
 from django.utils import timezone
 from datetime import timedelta
 
-RENEW_SESSION_EVERY = 60  # Renew session every 60 properties
+RENEW_SESSION_EVERY = 30  # Renew session every 30 properties
 
 class Command(BaseCommand):
     help = "Verifica si las viviendas siguen activas y actualiza cambios"
@@ -110,7 +110,7 @@ class Command(BaseCommand):
                     else:
                         property_obj.save()
                         self.stdout.write(f"Property {property_obj.id} active (no changes)")
-                time.sleep(1 + 1 * random.random())  # To avoid hitting the server too hard
+                time.sleep(2 + 1 * random.random())  # To avoid hitting the server too hard
             except IntegrityError as e:
                 self.stderr.write(f"Error with {getattr(property_obj, 'url', 'unknown')}: checksum already saved: {e}")
                 property_obj.active = False
