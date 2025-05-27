@@ -1,6 +1,7 @@
 import random
 import time
 from django.core.management.base import BaseCommand
+from django.db import IntegrityError
 
 from database.models import Properties, PropertyFeatures
 from scrapers.fotocasa_scraper.fotocasa_scraper import FotocasaScraper, parse_helpers as fotocasa_helpers
@@ -27,7 +28,7 @@ class Command(BaseCommand):
 
         # Obtener las propiedades activas que necesitan ser verificadas (no actualizadas hace 3 días o más)
         yesterday = timezone.now() - timedelta(days=1)
-        for property_obj in Properties.objects.filter(active=True, update_time_stamp__lte=yesterday).order_by('update_time_stamp', 'create_time_stamp'):
+        for property_obj in Properties.objects.filter(active=True, update_time_stamp__lte=yesterday, origin='Fotocasa').order_by('update_time_stamp', 'create_time_stamp'):
             try:
                 if property_obj.origin not in sessions:
                     continue
@@ -50,7 +51,7 @@ class Command(BaseCommand):
                 )
                 # TODO: controlar error en la petición HTTP (403)
 
-                if response.status_code in [404, 301]:
+                if response.status_code in [404, 301] or "propertyNotFound" in response.url:
                     property_obj.active = False
                     property_obj.save()
                     self.stdout.write(f"Property {property_obj.id} set as inactive")
@@ -79,6 +80,8 @@ class Command(BaseCommand):
                     if changes:
                         for field, value in changes.items():
                             if hasattr(property_obj, field):
+                                if field == 'checksum':
+                                    old_checksum = getattr(property_obj, field)
                                 setattr(property_obj, field, value)
                             elif features_stored and hasattr(features_stored, field):
                                 setattr(features_stored, field, value)
@@ -93,5 +96,14 @@ class Command(BaseCommand):
                         property_obj.save()
                         self.stdout.write(f"Property {property_obj.id} active (no changes)")
                 time.sleep(0.5 + 1 * random.random())  # To avoid hitting the server too hard
+            except IntegrityError as e:
+                self.stderr.write(f"Error with {getattr(property_obj, 'url', 'unknown')}: checksum already saved: {e}")
+                property_obj.active = False
+                try:
+                    setattr(property_obj, 'checksum', old_checksum)
+                    property_obj.save()
+                except Exception as e:
+                    self.stderr.write(f"Error saving inactive property with old checksum: {getattr(property_obj, 'url', 'unknown')}: {e}")
+                self.stdout.write(f"Property {property_obj.id} set as inactive due to duplicated checksum (property already exists)")
             except Exception as e:
                 self.stderr.write(f"Error with {getattr(property_obj, 'url', 'unknown')}: {e}")

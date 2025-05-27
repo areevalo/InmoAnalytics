@@ -181,7 +181,7 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
             # Decodificar el JSON escapado
             json_string = json_escaped.replace('\\"', '"').replace('\\"', '"')  # Reemplazar las comillas escapadas
             property_data = json.loads(json_string)  # Convertir a un diccionario de Python
-            logger.info(f"JSON con datos encontrado en el HTML. Procesando datos de la propiedad...")
+            # logger.info(f"JSON con datos encontrado en el HTML. Procesando datos de la propiedad...")
             # Extraer los datos de interés
             property_details = property_data['realEstateAdDetailEntityV2']
             property_old_details = property_data.get('realEstate')
@@ -251,7 +251,8 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
                 elif feature_text == "balcón":
                     property_features.balcony = True
                 else:
-                    logger.info(f"No se ha procesado la característica {feature_text} de la propiedad {property_basic_data.url}")
+                    # logger.info(f"No se ha procesado la característica {feature_text} de la propiedad {property_basic_data.url}")
+                    pass
         else:
             # TODO: quitar si no es necesario
             logger.warning("No se encontró el JSON en el HTML. Continuando con la obtención de datos de forma manual..")
