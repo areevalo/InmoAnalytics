@@ -56,21 +56,30 @@ class Command(BaseCommand):
                     headers=session_data['scraper'].req_headers
                 )
                 # TODO: controlar error en la petición HTTP (403)
+                if response.status_code == 403:
+                    self.stderr.write(f"Forbidden access to {property_obj.url}. Trying playwright parsing...")
+                    cookies = extract_cookies_from_session(session) if session_data['session'] else None
+                    ok, session, resp_content = session_data['scraper'].open_browser_with_session(
+                        session=session_data['session'],
+                        cookies=cookies,
+                        url=property_obj.url
+                    )
 
                 if response.status_code in [404, 301] or "propertyNotFound" in response.url:
                     property_obj.active = False
                     property_obj.save()
                     self.stdout.write(f"Property {property_obj.id} set as inactive")
                 else:
+                    resp_content = response.content if response.status_code == 200 else resp_content
                     property_obj.active = True
                     if property_obj.origin == 'Idealista':
                         features_parsed = idealista_helpers.get_property_data(
-                            response.content, session_data['scraper'].logger
+                            resp_content, session_data['scraper'].logger
                         )
                         property_parsed = features_parsed.property
                     elif property_obj.origin == 'Fotocasa':
                         property_parsed, features_parsed = fotocasa_helpers.get_property_data(
-                            response.content, property_obj, session_data['scraper'].logger
+                            resp_content, property_obj, session_data['scraper'].logger
                         )
                         property_parsed = session_data['scraper'].normalize_data(property_parsed)
 
