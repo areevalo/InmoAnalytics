@@ -11,8 +11,8 @@
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
 </head>
 <body>
-<div class="container mt-4">
-    <div class="d-flex align-items-center justify-content-center gap-4 mb-2 flex-wrap">
+<div class="container overflow-auto mt-4">
+    <div class="d-flex align-items-center justify-content-center gap-4 mb-2">
         <img src="{% static 'img/favicon.png' %}" alt="Logo" class="me-2 img-favicon">
         <div class="text-center">
             <h2 class="fw-bold mb-0">InmoAnalytics Madrid</h2>
@@ -25,11 +25,11 @@
     <form id="filters-form" method="get" class="row g-3">
         <h5 class="mt-4">Ubicación</h5>
         <div class="row gap-2">
-            <div class="col-md-4" id="id_municipality">
+            <div class="col-lg-4 col-md-5 col-sm-12" id="id_municipality">
                 {{ filter.form.municipality.label_tag }}
                 {{ filter.form.municipality }}
             </div>
-            <div class="col-md-4" id="neighborhood-container">
+            <div class="col-lg-4 col-md-5 col-sm-12" id="neighborhood-container">
                 <label for="id_neighborhood">Barrio:</label>
                 <select class="form-select" id="id_neighborhood" name="neighborhood" disabled
                     {% if request.GET.neighborhood %} data-selected="{{ request.GET.neighborhood }}"{% endif %}>
@@ -58,19 +58,19 @@
                     </div>
             </div>
         </div>
-        <div class="col-md-2">
+        <div class="col-lg-3 col-md-6">
             {{ filter.form.min_area.label_tag }}
             {{ filter.form.min_area }}
         </div>
-        <div class="col-md-2">
+        <div class="col-lg-3 col-md-6">
             {{ filter.form.min_rooms.label_tag }}
             {{ filter.form.min_rooms }}
         </div>
-        <div class="col-md-2">
+        <div class="col-lg-3 col-md-6">
             {{ filter.form.min_baths.label_tag }}
             {{ filter.form.min_baths }}
         </div>
-        <div class="col-md-3">
+        <div class="col-lg-3 col-md-6">
             {{ filter.form.type_of_home.label_tag }}
             {{ filter.form.type_of_home }}
         </div>
@@ -85,74 +85,74 @@
             <div id="collapseBoolean" class="accordion-collapse collapse" aria-labelledby="headingBoolean" data-bs-parent="#booleanFiltersAccordion">
               <div class="accordion-body">
                   <div class="row mb-4">
-                      <div class="col-md-2">
+                      <div class="col-lg-2 col-md-3 col-sm-6 mb-2">
                         {{ filter.form.construction_type.label_tag }}
                         {{ filter.form.construction_type }}
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-lg-2 col-md-3 col-sm-6 mb-2">
                         {{ filter.form.ownership_status.label_tag }}
                         {{ filter.form.ownership_status }}
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-lg-2 col-md-3 col-sm-6 mb-2">
                         {{ filter.form.floor_level.label_tag }}
                         {{ filter.form.floor_level }}
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-lg-2 col-md-3 col-sm-6 mb-2">
                         {{ filter.form.min_energy_calification.label_tag }}
                         {{ filter.form.min_energy_calification }}
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-lg-2 col-md-3 col-sm-6 mb-2">
                         {{ filter.form.orientation.label_tag }}
                         {{ filter.form.orientation }}
                     </div>
-                    <div class="col-md-2">
+                    <div class="col-lg-2 col-md-3 col-sm-6 mb-2">
                         {{ filter.form.construction_year.label_tag }}
                         {{ filter.form.construction_year }}
                     </div>
                   </div>
                   <div class="row">
-                      <div class="col-md-3 form-check">
+                      <div class="col-lg-3 col-md-4 form-check">
                         {{ filter.form.air_conditioning }}
                         <label class="form-check-label" for="{{ filter.form.air_conditioning.id_for_label }}">Aire acondicionado</label>
                       </div>
-                      <div class="col-md-3 form-check">
+                      <div class="col-lg-3 col-md-4 form-check">
                         {{ filter.form.fitted_wardrobes }}
                         <label class="form-check-label" for="{{ filter.form.fitted_wardrobes.id_for_label }}">Armarios empotrados</label>
                       </div>
-                      <div class="col-md-3 form-check">
+                      <div class="col-lg-3 col-md-4 form-check">
                         {{ filter.form.elevator }}
                         <label class="form-check-label" for="{{ filter.form.elevator.id_for_label }}">Ascensor</label>
                       </div>
-                      <div class="col-md-3 form-check">
+                      <div class="col-lg-3 col-md-4 form-check">
                         {{ filter.form.balcony }}
                         <label class="form-check-label" for="{{ filter.form.balcony.id_for_label }}">Balcón</label>
                       </div>
-                      <div class="col-md-3 form-check">
+                      <div class="col-lg-3 col-md-4 form-check">
                         {{ filter.form.heating }}
                         <label class="form-check-label" for="{{ filter.form.heating.id_for_label }}">Calefacción</label>
                       </div>
-                      <div class="col-md-3 form-check">
+                      <div class="col-lg-3 col-md-4 form-check">
                         {{ filter.form.garage }}
                         <label class="form-check-label" for="{{ filter.form.garage.id_for_label }}">Garaje</label>
                       </div>
-                      <div class="col-md-3 form-check">
+                      <div class="col-lg-3 col-md-4 form-check">
                         {{ filter.form.garden }}
                         <label class="form-check-label" for="{{ filter.form.garden.id_for_label }}">Jardín</label>
                       </div>
-                      <div class="col-md-3 form-check">
+                      <div class="col-lg-3 col-md-4 form-check">
                         {{ filter.form.pool }}
                         <label class="form-check-label" for="{{ filter.form.pool.id_for_label }}">Piscina</label>
                         <label class="form-heck-label" for="{{ filter.form.pool.id_for_label }}">Piscina</label>
                       </div>
-                      <div class="col-md-3 form-check">
+                      <div class="col-lg-3 col-md-4 form-check">
                         {{ filter.form.underfloor_heating }}
                         <label class="form-check-label" for="{{ filter.form.underfloor_heating.id_for_label }}">Suelo radiante</label>
                       </div>
-                      <div class="col-md-3 form-check">
+                      <div class="col-lg-3 col-md-4 form-check">
                         {{ filter.form.terrace }}
                         <label class="form-check-label" for="{{ filter.form.terrace.id_for_label }}">Terraza</label>
                       </div>
-                      <div class="col-md-3 form-check">
+                      <div class="col-lg-3 col-md-4 form-check">
                         {{ filter.form.storage_room }}
                         <label class="form-check-label" for="{{ filter.form.storage_room.id_for_label }}">Trastero</label>
                       </div>

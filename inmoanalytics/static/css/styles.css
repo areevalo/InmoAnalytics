@@ -3,7 +3,7 @@ body{
 }
 
 .img-favicon {
-    max-width: 50px;
+    max-width: 5% !important;
     height: auto;
 }
 
@@ -114,15 +114,18 @@ footer a{
     .col-hide-mobile {
         display: none !important;
     }
+    .img-favicon {
+        max-width: 11% !important;
+    }
 }
 
 /* En pantallas pequeñas (móvil), botones de paginación grandes */
 @media (max-width: 576px) {
 
-    .img-favicon {
-        max-width: 40px !important;
-    }
 
+    .table-responsive {
+        margin-right: 15px !important;
+    }
     .td-padding-left {
         padding-left: 10px !important;
     }
@@ -134,4 +137,15 @@ footer a{
     .d-flex.flex-wrap .text-center p {
         font-size: 12.5px;
     }
+
+ .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+ .btn-fixed {
+    min-width: 100px;
 }
+
+}
+
