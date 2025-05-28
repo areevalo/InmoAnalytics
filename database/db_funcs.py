@@ -1,5 +1,6 @@
 from database.db_connector import DBConnector
 from django.db import transaction, close_old_connections, connection, IntegrityError
+from scrapers.constants import PROP_FIELDS, FEATURES_FIELDS
 
 import os
 import django
@@ -17,6 +18,14 @@ BATCH_SIZE = 30
 MAX_RETRIES = 10
 MAX_CONNECTION_RETRIES = 3
 
+def update_fields(obj, data, fields):
+    updated = False
+    for field in fields:
+        new_value = getattr(data, field, None)
+        if getattr(obj, field, None) != new_value:
+            setattr(obj, field, new_value)
+            updated = True
+    return updated
 
 def add_to_batch(properties_data, logger):
     """Agrega datos al lote y realiza inserciones cuando se alcanza el tamaño establecido"""
@@ -37,8 +46,29 @@ def add_to_batch(properties_data, logger):
                         properties_to_insert.append(p_data)
                         logger.info(f"Propiedad inactiva con checksum duplicado eliminada y nueva añadida: {p_data.property.checksum}")
                     else:
-                        # TODO: actualizar la propiedad existente si es necesario
-                        logger.info(f"Se ha detectado que el checksum ya existe en BD. Omitimos inserción: {p_data}")
+                        try:
+                            features = PropertyFeatures.objects.get(property=prop)
+                        except PropertyFeatures.DoesNotExist:
+                            features = None
+
+                        updated = update_fields(prop, p_data.property, PROP_FIELDS)
+                        if features:
+                            updated |= update_fields(features, p_data, FEATURES_FIELDS)
+                        else:
+                            # Si la propiedad no tiene vinculadas características, crear los registros desde cero
+                            PropertyFeatures.objects.create(
+                                property=prop,
+                                **{field: getattr(p_data, field, None) for field in FEATURES_FIELDS}
+                            )
+                            updated = True
+
+                        if updated:
+                            prop.save()
+                            if features:
+                                features.save()
+                            logger.info(f"Propiedad y/o características con checksum {p_data.property.checksum} actualizadas en BD.")
+                        else:
+                            logger.info(f"Propiedad con checksum {p_data.property.checksum} ya está actualizada. No se realizaron cambios.")
                 except Properties.DoesNotExist:
                     # No existe, se añade para insertar
                     properties_to_insert.append(p_data)

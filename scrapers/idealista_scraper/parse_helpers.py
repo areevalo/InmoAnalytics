@@ -260,16 +260,13 @@ def get_property_data(resp_casa_content: bytes, logger: ScraperLogger):
                     print('underfloor_heating')
                     continue
 
-                # print(f"Ningun valor a procesar -> {fila_text_str}")
-
         return property_features
 
     except Exception as exc:
-        # TODO: guardar traza de error y error en tabla BD?
         logger.error("Algún dato es incorrecto. EXCEPCION -> . {}\n{}".format(exc, soup.text))
         if "Please enable JS and disable any ad blocker" in soup.text:
             time.sleep(120)
-        return property_features
+        return None
 
 
 def get_next_page_path(resp_property_content: bytes, num_init_page: int, logger=None):

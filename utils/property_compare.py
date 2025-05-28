@@ -1,3 +1,5 @@
+from scrapers.constants import FEATURES_FIELDS
+
 def compare_property_data(prop_stored, features_stored, prop_parsed, features_parsed):
     """
     Compara los datos almacenados y parseados de una propiedad y sus características.
@@ -19,13 +21,7 @@ def compare_property_data(prop_stored, features_stored, prop_parsed, features_pa
 
     # Comparar PropertyFeatures
     if features_stored and features_parsed:
-        features_fields = [
-            'rooms', 'baths', 'area', 'type_of_home', 'pool', 'garage', 'energy_calification',
-            'garden', 'fitted_wardrobes', 'air_conditioning', 'underfloor_heating', 'heating',
-            'terrace', 'storage_room', 'ownership_status', 'balcony', 'floor_level', 'elevator',
-            'orientation', 'construction_year'
-        ]
-        for field in features_fields:
+        for field in FEATURES_FIELDS:
             stored_value = getattr(features_stored, field, None)
             parsed_value = getattr(features_parsed, field, None)
             if stored_value != parsed_value:

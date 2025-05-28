@@ -85,21 +85,6 @@ def export_properties_excel(request):
 
 def property_list(request):
     f = PropertiesFilter(request.GET, queryset=Properties.objects.filter(active=1).order_by('-id'))
-    # boolean_fields = [
-    #     ('air_conditioning', 'Aire acondicionado'),
-    #     ('balcony', 'Balcón'),
-    #     ('elevator', 'Ascensor'),
-    #     ('fitted_wardrobes', 'Armarios empotrados'),
-    #     ('garage', 'Garaje'),
-    #     ('garden', 'Jardín'),
-    #     ('heating', 'Calefacción'),
-    #     ('pool', 'Piscina'),
-    #     ('storage_room', 'Trastero'),
-    #     ('terrace', 'Terraza'),
-    #     ('underfloor_heating', 'Suelo radiante'),
-    # ]
-    # # Ordenar por etiqueta
-    # boolean_fields_sorted = sorted(boolean_fields, key=lambda x: x[1])
     properties_qs = f.qs
     paginator = Paginator(properties_qs, 50)  # 20 propiedades por página
     page_number = request.GET.get('page')

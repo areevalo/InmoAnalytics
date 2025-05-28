@@ -82,11 +82,17 @@ class Command(BaseCommand):
                         features_parsed = idealista_helpers.get_property_data(
                             resp_content, session_data['scraper'].logger
                         )
+                        if not features_parsed:
+                            self.stderr.write(f"Could not parse property data for {property_obj.url}. Skipping...")
+                            continue
                         property_parsed = features_parsed.property
                     elif property_obj.origin == 'Fotocasa':
                         property_parsed, features_parsed = fotocasa_helpers.get_property_data(
                             resp_content, property_obj, session_data['scraper'].logger
                         )
+                        if not property_parsed or not features_parsed:
+                            self.stderr.write(f"Could not parse property data for {property_obj.url}. Skipping...")
+                            continue
                         property_parsed = session_data['scraper'].normalize_data(property_parsed)
 
                     try:

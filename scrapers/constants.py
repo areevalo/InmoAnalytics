@@ -1,3 +1,16 @@
+# Campos de Properties
+PROP_FIELDS = [
+    "price", "url", "municipality", "neighborhood", "street", "origin"
+]
+
+# Campos de PropertyFeatures
+FEATURES_FIELDS = [
+    "rooms", "baths", "area", "type_of_home", "pool", "garage", "energy_calification",
+    "garden", "fitted_wardrobes", "air_conditioning", "underfloor_heating", "heating",
+    "terrace", "storage_room", "ownership_status", "balcony", "floor_level", "elevator",
+    "orientation", "construction_year"
+]
+
 STREET_KEYWORDS = [
     "calle", "avenida", "paseo", "plaza", "camino", "travesía", "ronda", "urbanización", "carretera", "glorieta",
     "vía", "polígono", "carril", "callejón", "rotonda", "av."

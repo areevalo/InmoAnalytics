@@ -107,6 +107,10 @@ class IdealistaScraper(BaseScraper):
                         # return False
 
                     property_data_parsed = parse_helpers.get_property_data(resp_property_content, self.logger)
+                    if not property_data_parsed:
+                        self.logger.error(f"No se han podido obtener los datos de la propiedad #{ix + 1}. "
+                                          f"Omitiendo y pasando a siguiente propiedad...")
+                        continue
                     # TODO: pasar a parse_helpers
                     property_data_to_generate_checksum = {
                         "neighborhood": property_parsed.neighborhood,
