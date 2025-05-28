@@ -1,5 +1,5 @@
 body{
-    background-color: #fff8ee;
+    background-color: #f1f8ff;
 }
 
 .img-favicon {
@@ -39,6 +39,7 @@ table caption {
     border-radius: 6px 6px 0 0;
 }
 
+
 .table td,
 .table th {
   vertical-align: middle;
@@ -58,8 +59,8 @@ table caption {
 
 
 .table > tbody > tr:hover > td {
-    background-color: #d7edfd;
-    transition: background-color 0.1s;
+    background-color: #e0efff;
+    transition: background-color 0.2s ease-in-out;
 }
 
 
@@ -68,24 +69,43 @@ table caption {
     font-style: italic;
 }
 
+.btn-primary-soft {
+  background-color: #e7f1ff;
+  color: #004085;
+  border: 1px solid #69b3ff;
+}
+.btn-primary-soft:hover {
+  background-color: #004085;
+  color: #e7f1ff;
+    transition: background-color 0.15s ease-in-out;
+}
+
 .pagination .page-link {
     padding: 0.375rem 0.75rem;
     font-size: 1rem;
+    border-radius: 0.3rem;
 }
-/* En pantallas medianas (móvil grande/tablet), botones de paginación grandes */
+
+footer a{
+    color: #000000;
+   font-style: italic;
+}
+
+
 @media (max-width: 1400px) {
-    .col-hide-desktop-xl {
+    .col-hide-desktop {
         display: none !important;
     }
 }
 
+/* En pantallas medianas (móvil grande/tablet), botones de paginación grandes */
 @media (max-width: 990px) {
     .col-hide-tablet {
         display: none !important;
     }
 
      .pagination .page-link {
-        padding: 0.75rem 1.5rem;
+        padding: 0.5rem 1rem;
         font-size: 1.25rem;
     }
 }

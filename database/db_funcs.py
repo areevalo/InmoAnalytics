@@ -22,7 +22,7 @@ def update_fields(obj, data, fields):
     updated = False
     for field in fields:
         new_value = getattr(data, field, None)
-        if getattr(obj, field, None) != new_value:
+        if getattr(obj, field, None) != new_value and new_value is not None:
             setattr(obj, field, new_value)
             updated = True
     return updated
@@ -46,29 +46,34 @@ def add_to_batch(properties_data, logger):
                         properties_to_insert.append(p_data)
                         logger.info(f"Propiedad inactiva con checksum duplicado eliminada y nueva añadida: {p_data.property.checksum}")
                     else:
-                        try:
-                            features = PropertyFeatures.objects.get(property=prop)
-                        except PropertyFeatures.DoesNotExist:
-                            features = None
+                        if prop.origin == p_data.property.origin:
+                            try:
+                                features = PropertyFeatures.objects.get(property=prop)
+                            except PropertyFeatures.DoesNotExist:
+                                features = None
 
-                        updated = update_fields(prop, p_data.property, PROP_FIELDS)
-                        if features:
-                            updated |= update_fields(features, p_data, FEATURES_FIELDS)
-                        else:
-                            # Si la propiedad no tiene vinculadas características, crear los registros desde cero
-                            PropertyFeatures.objects.create(
-                                property=prop,
-                                **{field: getattr(p_data, field, None) for field in FEATURES_FIELDS}
-                            )
-                            updated = True
-
-                        if updated:
-                            prop.save()
+                            updated = update_fields(prop, p_data.property, PROP_FIELDS)
                             if features:
-                                features.save()
-                            logger.info(f"Propiedad y/o características con checksum {p_data.property.checksum} actualizadas en BD.")
+                                updated |= update_fields(features, p_data, FEATURES_FIELDS)
+                            else:
+                                # Si la propiedad no tiene vinculadas características, crear los registros desde cero
+                                PropertyFeatures.objects.create(
+                                    property=prop,
+                                    **{field: getattr(p_data, field, None) for field in FEATURES_FIELDS}
+                                )
+                                updated = True
+
+                            if updated:
+                                prop.save()
+                                if features:
+                                    features.save()
+                                logger.info(f"Propiedad y/o características con checksum {p_data.property.checksum} actualizadas en BD.")
+                            else:
+                                logger.info(f"Propiedad con checksum {p_data.property.checksum} ya está actualizada. No se realizaron cambios.")
                         else:
-                            logger.info(f"Propiedad con checksum {p_data.property.checksum} ya está actualizada. No se realizaron cambios.")
+                            # Si la propiedad ya existe pero con origen diferente, se omite la revisión y actualización de características
+                            logger.info(f"Propiedad con checksum {p_data.property.checksum} ya existe con origen diferente.")
+
                 except Properties.DoesNotExist:
                     # No existe, se añade para insertar
                     properties_to_insert.append(p_data)

@@ -41,9 +41,7 @@ INSTALLED_APPS = [
     # Aplicaciones personalizadas
     'database',  # Módulo para conexión y consultas a la base de datos
     'scrapers',  # Módulo para scrapers
-    'analytics',  # Análisis y estadísticas
     'exports',  # Exportación de datos
-    'scheduler',  # Programación de tareas
     'inmoanalytics'  # Extensiones útiles para desarrollo
 
 ]

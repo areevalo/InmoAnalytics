@@ -1,6 +1,6 @@
 # Campos de Properties
 PROP_FIELDS = [
-    "price", "url", "municipality", "neighborhood", "street", "origin"
+    "price", "url", "municipality", "neighborhood", "street"
 ]
 
 # Campos de PropertyFeatures
