@@ -122,7 +122,6 @@ footer a{
 /* En pantallas pequeñas (móvil), botones de paginación grandes */
 @media (max-width: 576px) {
 
-
     .table-responsive {
         margin-right: 15px !important;
     }
