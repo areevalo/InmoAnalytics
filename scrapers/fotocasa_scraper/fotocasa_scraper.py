@@ -1,12 +1,7 @@
 import datetime
 import time
 import random
-from encodings.punycode import selective_find
 from urllib.parse import urljoin
-
-import pandas
-import requests
-from bs4 import BeautifulSoup
 
 from custom_types import PropertyFeatures
 from database.db_funcs import add_to_batch
@@ -55,7 +50,7 @@ class FotocasaScraper(BaseScraper):
             resp_next_page_content = None
 
             scraped_properties = []  # type: List[PropertyFeatures]
-            for page in range(1, 100):
+            for page in range(1, 200):
                 page_scraped_properties = []
                 if resp_next_page_content:
                     html_content = resp_next_page_content

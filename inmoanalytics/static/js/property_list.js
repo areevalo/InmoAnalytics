@@ -231,3 +231,12 @@ document.addEventListener('DOMContentLoaded', function () {
         bsCollapse.show();
     }
 });
+
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.location.search.includes('page=')) {
+        const table = document.getElementById('property-list-table');
+        if (table) {
+            table.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+});

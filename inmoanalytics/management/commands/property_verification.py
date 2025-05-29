@@ -57,7 +57,6 @@ class Command(BaseCommand):
                     url=property_obj.url,
                     headers=session_data['scraper'].req_headers
                 )
-                # TODO: controlar error en la petición HTTP (403)
                 if response.status_code == 403:
                     self.stderr.write(f"Forbidden access to {property_obj.url}. Trying playwright parsing...")
                     cookies = extract_cookies_from_session(session) if session_data['session'] else None
@@ -134,3 +133,5 @@ class Command(BaseCommand):
                 self.stdout.write(f"Property {property_obj.id} set as inactive due to duplicated checksum (property already exists)")
             except Exception as e:
                 self.stderr.write(f"Error with {getattr(property_obj, 'url', 'unknown')}: {e}")
+        else:
+            self.stdout.write("Property verification completed successfully.")
