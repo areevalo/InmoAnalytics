@@ -1,11 +1,9 @@
 from scrapers.constants import FEATURES_FIELDS
 
 def compare_property_data(prop_stored, features_stored, prop_parsed, features_parsed):
-    """
-    Compara los datos almacenados y parseados de una propiedad y sus características.
+    """Compara los datos almacenados y parseados de una propiedad y sus características.
     Devuelve un diccionario con los campos que han cambiado y sus nuevos valores.
-    Si cambia algún campo usado para el checksum, lo recalcula.
-    """
+    Si cambia algún campo usado para el checksum, lo recalcula"""
     changes = {}
 
     # Comparar precio

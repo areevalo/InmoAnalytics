@@ -20,6 +20,7 @@ function hasActiveFilters() {
     }
     return false;
 }
+
 // Al hacer clic en el botón de "Exportar a Excel", se envía el formulario y aparece un mensaje de carga
 document.getElementById('export-excel-btn').addEventListener('click', function(e) {
     e.preventDefault();
@@ -74,6 +75,7 @@ document.getElementById('export-excel-btn').addEventListener('click', function(e
         loadingModal.hide();
     });
 });
+
 // Al hacer clic en el botón de "Quitar filtros" se restablecen los filtros
 document.getElementById('clear-filters-btn').addEventListener('click', function(e) {
     e.preventDefault();
@@ -104,32 +106,7 @@ document.getElementById('clear-filters-btn').addEventListener('click', function(
     // Limpia la URL
     window.history.replaceState({}, document.title, window.location.pathname);
 });
-// document.getElementById('clear-filters-btn').addEventListener('click', function(e) {
-//     e.preventDefault();
-//     const form = document.querySelector('form');
-//     form.reset();
-//     // Desmarca manualmente todos los checkboxes
-//     form.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
-//     form.querySelectorAll('select').forEach(function(select) {
-//         if (select.querySelector('option[value=""]')) {
-//             select.value = "";
-//         } else {
-//             select.selectedIndex = 0;
-//         }
-//     });
-//     // Restablecer el select de barrio
-//     const barrio = document.getElementById('id_neighborhood');
-//     barrio.disabled = true;
-//     barrio.innerHTML = '<option value="">Introduce un municipio</option>';
-//     // Restablecer el campo de superficie mínima
-//     document.getElementById('min_area').value = '';
-//     // Reinicia los rangos de precio
-//     document.getElementById('price_min').value = 0;
-//     document.getElementById('price_max').value = 1000000;
-//     updatePriceVals();
-//     // Limpia la URL
-//     window.history.replaceState({}, document.title, window.location.pathname);
-// });
+
 // Al cambiar el municipio, actualiza los barrios
 document.getElementById('id_municipality').addEventListener('change', function() {
     const municipio = this.querySelector('select, input').value;
@@ -150,10 +127,7 @@ document.getElementById('id_municipality').addEventListener('change', function()
         barrio.innerHTML = '<option value="">Introduce un municipio</option>';
     }
 });
-function formatPrice(val) {
-    if (parseInt(val) === 1000000) return 'Sin límite';
-    return parseInt(val).toLocaleString('es-ES') + ' €';
-}
+
 // Actualiza los valores mostrados de los rangos de precio mínimo y máximo
 function updatePriceVals() {
     const max = 1000000;
@@ -163,10 +137,12 @@ function updatePriceVals() {
     document.getElementById('min_price_val').textContent = new Intl.NumberFormat('es-ES', formatOpts).format(minVal);
     document.getElementById('max_price_val').textContent = maxVal >= max ? "Sin límite" : new Intl.NumberFormat('es-ES', formatOpts).format(maxVal);
 }
-  // Ejecuta al cargar
+
+// Ejecuta al cargar
 document.addEventListener('DOMContentLoaded', function() {
     updatePriceVals();
 
+    // Inicializa los selects de municipio y barrio
     const municipioSelect = document.querySelector('#id_municipality select, #id_municipality input');
     const barrio = document.getElementById('id_neighborhood');
     if (municipioSelect && municipioSelect.value) {
@@ -184,6 +160,20 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
     }
+
+    // Restaura el estado del acordeón al cargar la página
+    if (localStorage.getItem('accordionBooleanOpen') === 'true') {
+        const bsCollapse = new bootstrap.Collapse(collapseBoolean, { show: true, toggle: false });
+        bsCollapse.show();
+    }
+
+    // Si hay un parámetro 'page' en la URL, desplaza la vista al inicio de la tabla
+    if (window.location.search.includes('page=')) {
+        const table = document.getElementById('property-list-table');
+        if (table) {
+            table.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
 });
 
 // Controla que el precio mínimo no supere al máximo y viceversa
@@ -196,6 +186,8 @@ document.getElementById('price_min').addEventListener('input', function() {
         updatePriceVals();
     }
 });
+
+// Controla que el precio máximo no sea menor al mínimo y viceversa
 document.getElementById('price_max').addEventListener('input', function() {
     const max = Number(this.value);
     const minInput = document.getElementById('price_min');
@@ -222,21 +214,4 @@ collapseBoolean.addEventListener('show.bs.collapse', function () {
 });
 collapseBoolean.addEventListener('hide.bs.collapse', function () {
     localStorage.setItem('accordionBooleanOpen', 'false');
-});
-
-// Restaurar el estado al cargar la página
-document.addEventListener('DOMContentLoaded', function () {
-    if (localStorage.getItem('accordionBooleanOpen') === 'true') {
-        const bsCollapse = new bootstrap.Collapse(collapseBoolean, { show: true, toggle: false });
-        bsCollapse.show();
-    }
-});
-
-document.addEventListener('DOMContentLoaded', function() {
-    if (window.location.search.includes('page=')) {
-        const table = document.getElementById('property-list-table');
-        if (table) {
-            table.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    }
 });

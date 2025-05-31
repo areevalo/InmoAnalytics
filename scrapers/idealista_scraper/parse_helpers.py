@@ -82,10 +82,8 @@ def get_properties(resp_casas_content: bytes, base_url: str):
 
 
 def get_property_data(resp_casa_content: bytes, logger: ScraperLogger):
-    """
-    Procesa el contenido HTML de un anuncio inmobiliario para extraer datos estructurados.
-    Si algún dato no está disponible, se asignan valores por defecto.
-    """
+    """Procesa el contenido HTML de un anuncio inmobiliario para extraer datos estructurados.
+    Si algún dato no está disponible, se asignan valores por defecto"""
 
     # Analizar el HTML con BeautifulSoup
     soup = BeautifulSoup(resp_casa_content, "html.parser")
@@ -112,21 +110,15 @@ def get_property_data(resp_casa_content: bytes, logger: ScraperLogger):
         if not main_data:
             raise ValueError("No se encontró la sección principal de datos.")
 
-        # Extraer precio # TODO: revisar ownership status
-        # price_element = main_data.find("strong", class_="price")
-        # price = int(price_element.text.split()[0].replace(".", "")) if price_element else 0
-
         # Extraer calificación energética (si está disponible)
         energy_element = soup.find('span', text=re.compile(r'\d+ kWh/m² año'))
         if energy_element:
             energy_class = energy_element.get('class')[0]
             property_features.energy_calification = energy_class.split("-")[-1].upper().strip()
-        # TODO: ¿crear checksum con la descripción?
         property_description = main_data.find("div", class_="comment")
         if property_description:
             if any(keyword in property_description.text.lower() for keyword in UNDERFLOOR_HEATING_KEYWORDS):
                 property_features.underfloor_heating = True
-            # TODO: LLEVAR A MéTODO ACCESIBLE DESDE AMBOS SCRAPERS (BASIC U OTRO FICHERO)
                 # Análisis de estado de la propiedad
             if any(keyword in property_description.text.lower() for keyword in OCCUPIED_PROPERTY_KEYWORDS):
                 property_features.ownership_status = "Ocupada ilegalmente"
@@ -160,26 +152,22 @@ def get_property_data(resp_casa_content: bytes, logger: ScraperLogger):
                     property_features.baths = int(baths_str) if baths_str != 'sin' else 0
                     continue
 
-                # Terraza
                 if "terraza" in fila_text_str:
                     property_features.terrace = True
                     continue
 
-                # Garaje
                 if "garaje" in fila_text_str and not fila_text_str.endswith("adicionales"):
                     property_features.garage = True
                     continue
                 else:
                     pass
 
-                # Trastero
                 if "trastero" in fila_text_str and not fila_text_str.endswith("adicionales"):
                     property_features.storage_room = True
                     continue
                 else:
                     pass
 
-                # Orientación
                 if "orientación" in fila_text_str:
                     orientation_parts = fila_text_str.split()
                     orientation_list = orientation_parts[1:] if len(orientation_parts) > 1 else []
@@ -193,42 +181,32 @@ def get_property_data(resp_casa_content: bytes, logger: ScraperLogger):
                     property_features.construction_year = fila_text_str.split()[2].strip()
                     continue
                 elif "obra nueva" in fila_text_str:
-                    # TODO: controlar datos de obra nueva
                     property_features.construction_year = 'Obra nueva'
                     continue
 
-                # Calefacción
                 if "calefacción" in fila_text_str:
                     property_features.heating = True
                     continue
 
-                # Piscina
                 if "piscina" in fila_text_str:
                     property_features.pool = True
                     continue
 
-                # TODO: parsear datos
                 if "jardin" in fila_text_str or "jardín" in fila_text_str:
                     property_features.garden = True
                     continue
 
                 if "aire acondicionado" in fila_text_str:
                     property_features.air_conditioning = True
-                    if "sin" in fila_text_str:
-                        print("que")
                     continue
 
                 if "armarios empotrados" in fila_text_str:
                     property_features.fitted_wardrobes = True
-                    if "sin" in fila_text_str:
-                        print("que")
                     continue
 
                 if "balcón" in fila_text_str or "balcon" in fila_text_str:
                     if fila_text_str == "balcón":
                         property_features.balcony = True
-                    else:
-                        print('que')
                     continue
 
                 if any(keyword in fila_text_str.lower() for keyword in FLOOR_LEVEL_KEYWORDS):
@@ -252,12 +230,6 @@ def get_property_data(resp_casa_content: bytes, logger: ScraperLogger):
                         property_features.elevator = True
                     elif fila_text_str.startswith("sin"):
                         property_features.elevator = False
-                    else:
-                        print('que')
-                    continue
-
-                if "suelo radiante" in fila_text_str or 'suelo' in fila_text_str:
-                    print('underfloor_heating')
                     continue
 
         return property_features
@@ -280,7 +252,7 @@ def get_next_page_path(resp_property_content: bytes, num_init_page: int, logger=
             next_page_url = re.sub(r'pagina-\d+', f'pagina-{num_init_page}', next_page_url)
             logger.info(f"Se ha modicado la página a procesar a la número {num_init_page}")
     except Exception as exc:
-        print("No se ha podido obtener la siguiente página a procesar -> {}".format(exc))
+        logger.error("No se ha podido obtener la siguiente página a procesar -> {}".format(exc))
         return None
 
     return next_page_url

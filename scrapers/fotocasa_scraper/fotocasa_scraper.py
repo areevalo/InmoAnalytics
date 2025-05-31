@@ -27,26 +27,13 @@ class FotocasaScraper(BaseScraper):
         self.proxies = {}
 
     def scrape(self):
+        # TODO: refactorizar en varios métodos
         self.logger.info("Empezando scraping en Fotocasa...")
         try:
-            # session = requests.Session()
             req_init_url = self.DEFAULT_SEARCH_URL
             ok, session, resp_init_html_content = self.open_browser_with_session(url=req_init_url)
-            # TODO: poner la URL por pantalla
-            # req_init_url = input("Introduzca la URL de la búsqueda de Fotocasa que quiere procesar:") or self.DEFAULT_SEARCH_URL
-
             self.logger.info("Proceso iniciado a {}".format(datetime.datetime.now()))
-            # Hacer la solicitud HTTP y obtener el HTML inicial
-            # resp_init = session.get(
-            #     url=req_init_url,
-            #     headers=self.req_headers,
-            #     proxies=self.proxies
-            # )
             html_content = resp_init_html_content
-            # if not resp_init.status_code == 200:
-            #     self.logger.error(f"Error en la petición inicial. Reintentando con Playwright...")
-            #     cookies = extract_cookies_from_session(session)
-            #     ok, session, html_content = self.open_browser_with_session(cookies=cookies, url=req_init_url)
             resp_next_page_content = None
 
             scraped_properties = []  # type: List[PropertyFeatures]
@@ -76,7 +63,6 @@ class FotocasaScraper(BaseScraper):
                         self.logger.error(f"Error en la petición de la vivienda #{ix}. Reintentando con Playwright...")
                         cookies = extract_cookies_from_session(session)
                         ok, session, resp_property_content = self.open_browser_with_session(session, cookies, property_parsed.url)
-                        # return False
 
                     property_parsed_updated, property_data_parsed = parse_helpers.get_property_data(
                         resp_property_content,
@@ -132,5 +118,4 @@ class FotocasaScraper(BaseScraper):
             self.logger.info("Proceso finalizado a {}".format(datetime.datetime.now()))
 
         except Exception as e:
-            # TODO: cuando se cierra el navegador, salta excepción en vez de reintentar
             self.logger.error("Error en el proceso de scraping: {}".format(e))

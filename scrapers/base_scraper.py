@@ -42,11 +42,7 @@ class BaseScraper:
         self.logger = ScraperLogger(self.__class__.__name__).logger
 
     def generate_property_checksum(self, property_data):
-        """
-        Genera un checksum único basado en los datos relevantes de una propiedad.
-
-        :returns: checksum generado usando SHA-256.
-        """
+        """Genera un checksum único basado en los datos relevantes de una propiedad"""
         # Concatena los valores relevantes en una cadena
         property_data_to_hash = ''.join(str(value) for value in property_data.values())
 
@@ -223,15 +219,6 @@ class BaseScraper:
         self.logger.error(f"Se alcanzó el número máximo de intentos ({max_attempts}) "
                           "para obtener el contenido del navegador")
         return None
-
-    def fetch_html(self, url):
-        try:
-            response = requests.get(url, timeout=10)
-            response.raise_for_status()
-            return BeautifulSoup(response.text, 'html.parser')
-        except requests.exceptions.RequestException as e:
-            print(f"Error fetching URL {url}: {e}")
-            return None
 
     def normalize_price(self, price_str):
         # Convierte el precio a un número eliminando símbolos y espacios

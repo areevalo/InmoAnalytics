@@ -115,9 +115,7 @@ class PropertiesFilter(django_filters.FilterSet):
         label='Municipio',
         choices=lambda: [('', 'Cualquiera')] + [(m, m) for m in Properties.objects.order_by('municipality').values_list('municipality', flat=True).distinct() if m]
     )
-    # neighborhood = django_filters.CharFilter(lookup_expr='icontains', label='Barrio')
-    # min_year = django_filters.NumberFilter(field_name="propertyfeatures__construction_year", lookup_expr='gte', label='Año construcción desde')
-    # max_year = django_filters.NumberFilter(field_name="propertyfeatures__construction_year", lookup_expr='lte', label='Año construcción hasta')
+
 
     min_rooms = django_filters.ChoiceFilter(
         label='Habitaciones',
@@ -185,7 +183,7 @@ class PropertiesFilter(django_filters.FilterSet):
         label='Barrio',
         lookup_expr='icontains'
     )
-    # max_area = django_filters.NumberFilter(field_name="propertyfeatures__area", lookup_expr='lte', label='Superficie máxima (m²)')
+
     # Boolean filters (extras checklist)
     elevator = django_filters.BooleanFilter(
         field_name="propertyfeatures__elevator",
@@ -273,7 +271,6 @@ class PropertiesFilter(django_filters.FilterSet):
         model = Properties
         fields = [
             'price_min', 'price_max', 'municipality', 'neighborhood',
-            # 'min_year', 'max_year','max_area',
             'min_rooms', 'min_baths',
             'min_area', 'terrace', 'pool', 'balcony',
             'garden', 'heating', 'air_conditioning',

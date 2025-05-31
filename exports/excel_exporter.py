@@ -6,7 +6,7 @@ from inmoanalytics.filters import PropertiesFilter
 
 
 def export_properties_excel(request: HttpRequest) -> HttpResponse:
-    """Exporta las propiedades filtradas a un archivo Excel"""
+    """Exporta las propiedades filtradas a un archivo Excel (que están activas)"""
     f = PropertiesFilter(request.GET, queryset=Properties.objects.filter(active=1))
     properties = f.qs.prefetch_related('propertyfeatures_set').all()
 
@@ -38,7 +38,7 @@ def export_properties_excel(request: HttpRequest) -> HttpResponse:
         ('construction_year', 'Año construcción'),
         ('url', 'URL'),
     ]
-    # Campos que son booleanos y deben indicar¨se como "Sí"/"No" en el Excel
+    # Campos que son booleanos y deben indicarse como "Sí"/"No" en el Excel
     boolean_fields = {
         'elevator', 'garage', 'pool', 'terrace', 'balcony', 'garden',
         'fitted_wardrobes', 'air_conditioning', 'heating', 'underfloor_heating', 'storage_room'
@@ -68,5 +68,5 @@ def export_properties_excel(request: HttpRequest) -> HttpResponse:
     df = pd.DataFrame(data, columns=column_names)
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = 'attachment; filename=propiedades.xlsx'
-    df.to_excel(response, index=False, engine='openpyxl')
+    df.to_excel(response, index=False)
     return response

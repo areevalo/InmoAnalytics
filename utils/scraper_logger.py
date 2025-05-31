@@ -1,23 +1,3 @@
-# import logging
-# from datetime import datetime
-# import os
-#
-# class ScraperLogger:
-#     def __init__(self, name):
-#         self.logger = logging.getLogger(name)
-#         self.logger.setLevel(logging.INFO)
-#
-#         if not os.path.exists('logs'):
-#             os.makedirs('logs')
-#
-#         timestamp = datetime.now().strftime("%d-%m-%Y__%H-%M-%S")
-#         log_filename = f'logs/scraper__{timestamp}.log'
-#
-#         handler = logging.FileHandler(log_filename)
-#         formatter = logging.Formatter('%(asctime)s-%(name)s-%(levelname)s-%(message)s')
-#         handler.setFormatter(formatter)
-#
-#         self.logger.addHandler(handler)
 import logging
 from datetime import datetime
 import os

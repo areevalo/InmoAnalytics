@@ -55,13 +55,8 @@ class IdealistaScraper(BaseScraper):
     def scrape(self):
         self.logger.info("Empezando scraping en Idealista...")
         try:
+            # TODO: refactorizar en varios métodos
             session = requests.Session()
-            # ok, session, resp_init_html_content = self.open_browser_with_session(url="https://www.idealista.com/venta-viviendas/madrid-provincia/")
-            # TODO: poner la URL por pantalla
-            # req_init_url = input("Introduzca la URL de la búsqueda de idealista que quiere procesar:")
-            # if req_init_url == "":
-            #     req_init_url = "https://www.idealista.com/venta-viviendas/madrid-provincia/con-sin-inquilinos/?ordenado-por=fecha-publicacion-desc"
-
             req_init_url = self.DEFAULT_SEARCH_URL
             self.logger.info("Proceso iniciado a {}".format(datetime.datetime.now()))
             # Hacer la solicitud HTTP y obtener el HTML inicial
@@ -100,7 +95,6 @@ class IdealistaScraper(BaseScraper):
                     resp_property_content = resp_property.content
                     ok = self.basic_validate_request(resp_property)
                     if not ok:
-                        # TODO: verificar funcionamiento del reintento
                         self.logger.error(f"Error en la petición de la vivienda #{ix}. Reintentando con Playwright...")
                         cookies = extract_cookies_from_session(session)
                         ok, session, resp_property_content = self.open_browser_with_session(session, cookies, property_parsed.url)
@@ -149,7 +143,6 @@ class IdealistaScraper(BaseScraper):
                     if not ok or num_next_page % 50 == 0:
                         # Abrir navegador Playwright en caso de error al pasar a siguiente página o cada 50 páginas
                         self.logger.error(f"Error en la petición de la página #{num_next_page}. Reintentando con Playwright...")
-                        # cookies = extract_cookies_from_session(session)
                         ok, session, resp_next_page_content = self.open_browser_with_session(url=req_next_page_url, mandatory_pause=300)
                     self.logger.info("Procesando la página {} ({})...".format(num_next_page, req_next_page_url))
                     continue

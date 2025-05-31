@@ -4,7 +4,7 @@ from django.core.management.base import BaseCommand
 from django.db import IntegrityError
 
 from database.models import Properties, PropertyFeatures
-from scrapers.base_scraper import BaseScraper, extract_cookies_from_session
+from scrapers.base_scraper import extract_cookies_from_session
 from scrapers.fotocasa_scraper.fotocasa_scraper import FotocasaScraper, parse_helpers as fotocasa_helpers
 from scrapers.idealista_scraper.idealista_scraper import IdealistaScraper, parse_helpers as idealista_helpers
 from utils.property_compare import compare_property_data
@@ -12,7 +12,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 RENEW_SESSION_EVERY = 30  # Renueva la sesión cada X propiedades procesadas de un mismo origen para evitar bloqueos
-DAYS_FOR_VERIFICATION = 3  # Días desde la última actualización para verificar si la propiedad sigue activa
+DAYS_FOR_VERIFICATION = 3 # Días desde la última actualización para verificar si la propiedad sigue activa
 
 class Command(BaseCommand):
     help = "Verifica si las viviendas siguen activas y actualiza cambios"
@@ -108,7 +108,7 @@ class Command(BaseCommand):
                     try:
                         features_stored = PropertyFeatures.objects.get(property=property_obj)
                     except PropertyFeatures.DoesNotExist:
-                        features_stored = None # No debería entrar por aquí, pero por si acaso
+                        features_stored = None
 
                     # Inicializar valor a False para verificar si se modifica alguna característica para hacer 'save'
                     some_feature_changed = False

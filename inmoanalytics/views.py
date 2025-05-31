@@ -1,10 +1,8 @@
-import pandas as pd
-
 from django.core.paginator import Paginator
-from django.http import JsonResponse, HttpResponse
+from django.http import JsonResponse
 from django.shortcuts import render
 from django.utils.safestring import mark_safe
-from database.models import Properties, PropertyFeatures
+from database.models import Properties
 from .filters import PropertiesFilter
 
 def get_neighborhoods(request):
@@ -34,9 +32,7 @@ def property_list(request):
             prop.rooms = features.rooms
             prop.baths = features.baths
             prop.area = f"{features.area} m²" if features.area else None
-            # min_year, max_year = parse_year_range(getattr(features, 'construction_year', None))
             prop.construction_year = features.construction_year
-            # prop.construction_year_max = max_year
             prop.type_of_home = features.type_of_home
             prop.ownership_status = features.ownership_status
             prop.is_new_home = "Obra nueva" if features.construction_year == "Obra nueva" else "Segunda mano"
@@ -46,12 +42,10 @@ def property_list(request):
         else:
             prop.baths = prop.rooms = prop.area = prop.floor = prop.elevator = prop.garage = None
             prop.type_of_home = prop.ownership_status = prop.construction_year = None
-            # prop.construction_year_min = prop.construction_year_max = None
 
         properties.append(prop)
     return render(request, 'property_list.html', {
         'filter': f,
         'properties': properties,
         'page_obj': page_obj,
-        # 'boolean_fields_sorted': boolean_fields_sorted,
     })

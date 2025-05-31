@@ -72,41 +72,8 @@ def get_properties(html_content: bytes, base_url: str):
     # Extraer los datos de cada anuncio
     properties = []
     for listing in soup.find_all("article", class_=["re-CardPackPremium", "re-CardPackMinimal"]):
-        title = listing.find("span", class_="re-CardTitle").text.strip()
-        description = listing.find("p", class_="re-CardDescription").text.strip()
         price = listing.find("span", class_="re-CardPrice").text.strip()
-        # location = listing.find("p", class_="re-CardPackLocation").text.strip()
         url_path = listing.find("a", class_=["re-CardPackPremium-carousel", "re-CardPackMinimal-slider"]).get('href')
-        # street_start_position = title.find(' en ')
-        # if street_start_position > -1:
-        #     # Ajustar para empezar después de 'en'
-        #     street_start_position += len(' en ')
-        #
-        #     # Buscar todas las comas en el título
-        #     commas = [pos for pos, char in enumerate(title) if char == ',']
-        #
-        #     # Inicializar campos
-        #     street = None
-        #     neighborhood = None
-        #     municipality = None
-        #
-        #     if commas:
-        #         # La última coma indica el barrio
-        #         neighborhood = title[commas[-1] + 1:].strip()
-        #
-        #         # Si hay más de una coma, analizar el contenido entre las comas
-        #         if len(commas) > 1:
-        #             street = title[street_start_position:commas[-1]].strip()
-        #         else:
-        #             # Si solo hay una coma, asumir que todo después de 'en' hasta la coma es la calle
-        #             street = title[street_start_position:commas[0]].strip()
-        #     else:
-        #         # Si no hay comas, asumir que todo después de 'en' es la calle
-        #         street = title[street_start_position:].strip()
-        #
-        #     # Capitalizar los resultados para consistencia
-        #     street = street[0].upper() + street[1:] if street else None
-        #     neighborhood = neighborhood[0].upper() + neighborhood[1:] if neighborhood else None
         municipality = "Madrid"  # Asumir municipio por defecto si no está presente
 
         property_basic_data = Property(
@@ -181,7 +148,6 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
             # Decodificar el JSON escapado
             json_string = json_escaped.replace('\\"', '"').replace('\\"', '"')  # Reemplazar las comillas escapadas
             property_data = json.loads(json_string)  # Convertir a un diccionario de Python
-            # logger.info(f"JSON con datos encontrado en el HTML. Procesando datos de la propiedad...")
             # Extraer los datos de interés
             property_details = property_data['realEstateAdDetailEntityV2']
             property_old_details = property_data.get('realEstate')
@@ -251,10 +217,9 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
                 elif feature_text == "balcón":
                     property_features.balcony = True
                 else:
-                    # logger.info(f"No se ha procesado la característica {feature_text} de la propiedad {property_basic_data.url}")
                     pass
         else:
-            # TODO: quitar si no es necesario
+            # TODO: quitar si no es necesario en el futuro
             logger.warning("No se encontró el JSON en el HTML. Continuando con la obtención de datos de forma manual..")
             # Extraer del título el tipo de vivienda
             title = soup.find("h1", class_="re-DetailHeader-propertyTitle").text.strip()
@@ -324,8 +289,6 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
                         property_features.floor_level = "Bajo"
                     elif "sótano" in feature_text:
                         property_features.floor_level = "Sótano"  # comparar con Idealista ya que es un valor para checksum
-                    else:
-                        print("que")
                 else:
                     pass
             if "obra-nueva" in property_basic_data_updated.url:
@@ -429,7 +392,6 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
         return property_basic_data_updated, property_features
 
     except Exception as exc:
-        # TODO: guardar traza de error y error en tabla BD?
         logger.error("Algún dato es incorrecto. EXCEPCION -> . {}\n{}".format(exc, soup.text))
         if "Please enable JS and disable any ad blocker" in soup.text:
             time.sleep(120)
