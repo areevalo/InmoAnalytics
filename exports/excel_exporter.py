@@ -7,7 +7,7 @@ from inmoanalytics.filters import PropertiesFilter
 
 def export_properties_excel(request: HttpRequest) -> HttpResponse:
     """Exporta las propiedades filtradas a un archivo Excel"""
-    f = PropertiesFilter(request.GET, queryset=Properties.objects.all())
+    f = PropertiesFilter(request.GET, queryset=Properties.objects.filter(active=1))
     properties = f.qs.prefetch_related('propertyfeatures_set').all()
 
     # Define el orden y los nombres de las columnas: (campo en models, nombre en Excel)
