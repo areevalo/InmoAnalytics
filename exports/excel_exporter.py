@@ -1,15 +1,16 @@
 import pandas as pd
-from django.http import HttpResponse
+from django.http import HttpResponse, HttpRequest
 
 from database.models import Properties
 from inmoanalytics.filters import PropertiesFilter
 
 
-def export_properties_excel(request):
+def export_properties_excel(request: HttpRequest) -> HttpResponse:
+    """Exporta las propiedades filtradas a un archivo Excel"""
     f = PropertiesFilter(request.GET, queryset=Properties.objects.all())
     properties = f.qs.prefetch_related('propertyfeatures_set').all()
 
-    # Define el orden y los nombres de las columnas: (campo, nombre en español)
+    # Define el orden y los nombres de las columnas: (campo en models, nombre en Excel)
     columns = [
         ('municipality', 'Municipio'),
         ('neighborhood', 'Barrio'),
@@ -37,12 +38,14 @@ def export_properties_excel(request):
         ('construction_year', 'Año construcción'),
         ('url', 'URL'),
     ]
+    # Campos que son booleanos y deben indicar¨se como "Sí"/"No" en el Excel
     boolean_fields = {
         'elevator', 'garage', 'pool', 'terrace', 'balcony', 'garden',
         'fitted_wardrobes', 'air_conditioning', 'heating', 'underfloor_heating', 'storage_room'
     }
     data = []
     for prop in properties:
+        # Obtiene las características asociadas a cada propiedad
         features = prop.propertyfeatures_set.first()
         row = []
         for field, _ in columns:
@@ -65,5 +68,5 @@ def export_properties_excel(request):
     df = pd.DataFrame(data, columns=column_names)
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = 'attachment; filename=propiedades.xlsx'
-    df.to_excel(response, index=False)
+    df.to_excel(response, index=False, engine='openpyxl')
     return response

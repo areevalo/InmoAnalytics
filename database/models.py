@@ -2,6 +2,10 @@ from django.db import models
 
 
 class Properties(models.Model):
+    """Representa una propiedad inmobiliaria y su información básica.
+
+    Almacena detalles como la URL del anuncio, precio, ubicación y metadatos
+    para el seguimiento y la gestión de la propiedad"""
     id = models.BigAutoField(primary_key=True)
     url = models.TextField()
     price = models.IntegerField()
@@ -15,14 +19,20 @@ class Properties(models.Model):
     update_time_stamp = models.DateTimeField(auto_now=True)
 
     class Meta:
-        managed = False
+        managed = False  # Indica que la tabla es gestionada externamente (en este caso phpMyAdmin del hosting)
         db_table = 'properties'
         app_label = 'database'
 
 
 class PropertyFeatures(models.Model):
+    """Almacena características detalladas de una propiedad específica.
+
+    Incluye información sobre número de habitaciones, baños, área,
+    entre otros atributos"""
+
     id = models.BigAutoField(primary_key=True)
-    property = models.ForeignKey(Properties, on_delete=models.CASCADE)  # Relación con Properties
+    # Relación con Properties. Especifica que se elimine en cascada junto con la propiedad
+    property = models.ForeignKey(Properties, on_delete=models.CASCADE)
     rooms = models.IntegerField()
     baths = models.IntegerField()
     area = models.IntegerField()

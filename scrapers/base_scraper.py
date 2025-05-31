@@ -237,14 +237,6 @@ class BaseScraper:
         # Convierte el precio a un número eliminando símbolos y espacios
         return int(price_str.replace('€', '').replace(',', '').strip())
 
-    def insert_into_database(self, data, table_name, db_connection):
-        # Inserta datos normalizados en la base de datos
-        cursor = db_connection.cursor()
-        placeholders = ', '.join(['%s'] * len(data))
-        query = f"INSERT INTO {table_name} VALUES ({placeholders})"
-        cursor.execute(query, tuple(data.values()))
-        db_connection.commit()
-
     def normalize_data(self, data_parsed):
         unique_property = False
         if not isinstance(data_parsed, list):

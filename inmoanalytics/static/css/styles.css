@@ -1,3 +1,4 @@
+/* GENERAL */
 body{
     background-color: #f1f8ff;
 }
@@ -7,30 +8,9 @@ body{
     height: auto;
 }
 
-/*.section-title {*/
-/*  position: relative;*/
-/*  display: inline-block;*/
-/*  font-weight: 600;*/
-/*  font-size: 1.5rem;*/
-/*  padding-bottom: 0.3rem;*/
-/*}*/
-
-/*.section-title::after {*/
-/*  content: "";*/
-/*  position: absolute;*/
-/*  bottom: 0;*/
-/*  left: 0;*/
-/*  width: 60%;*/
-/*  height: 3px;*/
-/*  background-color: #0077cc;*/
-/*  border-radius: 2px;*/
-/*}*/
-
-.d-flex.justify-content-between.mb-1 {
-    margin-bottom: 0 !important;
-}
+/* FILTROS Y BOTONES */
 #min_price_val, #max_price_val {
-    margin-bottom: -4px;
+    margin-bottom: -4px; /* Ajuste visual para alinear correctamente los valores con los sliders de rango */
 }
 
 .btn-primary {
@@ -47,6 +27,19 @@ body{
     min-width: 180px;
 }
 
+.btn-primary-soft {
+  background-color: #e7f1ff;
+  color: #004085;
+  border: 1px solid #69b3ff;
+}
+
+.btn-primary-soft:hover {
+  background-color: #004085;
+  color: #e7f1ff;
+    transition: background-color 0.15s ease-in-out;
+}
+
+/* TABLA */
 table caption {
     caption-side: top !important;
     text-align: center;
@@ -56,11 +49,6 @@ table caption {
     background: #e9ecef;
     padding: 15px 0;
     border-radius: 6px 6px 0 0;
-}
-
-.table td,
-.table th {
-  vertical-align: middle;
 }
 
 .table th {
@@ -75,27 +63,14 @@ table caption {
     padding-right: 15px !important;
 }
 
-
 .table > tbody > tr:hover > td {
     background-color: #e0efff;
     transition: background-color 0.2s ease-in-out;
 }
 
-
 .text-muted-italic {
     color: #6c757d !important;
     font-style: italic;
-}
-
-.btn-primary-soft {
-  background-color: #e7f1ff;
-  color: #004085;
-  border: 1px solid #69b3ff;
-}
-.btn-primary-soft:hover {
-  background-color: #004085;
-  color: #e7f1ff;
-    transition: background-color 0.15s ease-in-out;
 }
 
 .pagination .page-link {
@@ -109,6 +84,7 @@ footer a{
    font-style: italic;
 }
 
+/* RESPONSIVIDAD */
 
 @media (max-width: 1400px) {
     .col-hide-desktop {
@@ -116,7 +92,7 @@ footer a{
     }
 }
 
-/* En pantallas medianas (móvil grande/tablet), botones de paginación grandes */
+/* En pantallas medianas (tablet) */
 @media (max-width: 990px) {
     .col-hide-tablet {
         display: none !important;
@@ -137,7 +113,7 @@ footer a{
     }
 }
 
-/* En pantallas pequeñas (móvil), botones de paginación grandes */
+/* En pantallas pequeñas (móvil) */
 @media (max-width: 576px) {
 
     .td-padding-left {
@@ -152,10 +128,9 @@ footer a{
         font-size: 12.5px;
     }
 
-
- .btn-fixed {
-    min-width: 100px;
-}
+     .btn-fixed {
+        min-width: 100px;
+    }
 
 }
 
