@@ -137,7 +137,6 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
     soup = BeautifulSoup(resp_casa_content, "html.parser")
     property_features = PropertyFeatures()
     property_basic_data_updated = property_basic_data
-    # TODO: evitar procesar  nuda propiedad, subastas, oportunidad de inversión por alquiler u okupado
     try:
 
         script_tag = soup.find("script", id="sui-scripts")
@@ -249,12 +248,11 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
                             street = title[street_start_position:commas[0]].strip()
                             location = title[commas[0] + 1:commas[-1]].strip()
                     else:
-                        # Si solo hay una coma, asumir que todo después de 'en' hasta la coma es la calle
-                        # TODO: meter "calle"
+                        # Si solo hay una coma, asumir que después de 'en' hasta la coma es la calle
                         street = title[street_start_position:commas[0]].strip()
                         location = title[commas[0] + 1:].strip()
                 else:
-                    # Si no hay comas, asumir que todo después de 'en' es el barrio/municipio
+                    # Si no hay comas, asumir que después de 'en' es el barrio/municipio
                     location = title[street_start_position:].strip()
 
                 # Capitalizar los resultados para consistencia
@@ -297,7 +295,7 @@ def get_property_data(resp_casa_content: bytes, property_basic_data: Property, l
             else:
                 specific_features = soup.find_all("div", class_="re-DetailFeaturesList-featureContent")
 
-            for feature in specific_features:  # TODO: separar características de obra nueva y de segunda mano
+            for feature in specific_features:
                 label = (feature.find("p", class_="re-DetailFeaturesList-featureLabel") or feature.find("span", class_="re-SharedFeature-legendTitle")).text.lower().strip()
                 value = (feature.find("div", class_="re-DetailFeaturesList-featureValue") or feature.find("span", class_="re-SharedFeature-legendDescription")).text.lower().strip()
                 if label == "superficie":

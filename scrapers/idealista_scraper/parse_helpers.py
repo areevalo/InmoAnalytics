@@ -58,7 +58,6 @@ def get_properties(resp_casas_content: bytes, base_url: str):
 
     for listing in soup.find_all("article", class_="item"):
         title = listing.find("a", class_="item-link").text.strip()
-        # TODO: crear checksum con description?
         description = listing.find("div", class_="item-description").text.strip()
         price = listing.find("span", class_="item-price").text.strip()
         url_path = listing.find("a", class_="item-link").get('href')
